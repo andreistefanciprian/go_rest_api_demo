@@ -1,0 +1,36 @@
+version: '3.3'
+services:
+  my-app:
+    container_name: my_app
+    build: .
+    ports: 
+      - 8080:8080 
+    restart: on-failure
+    env_file:
+      - .env
+    depends_on:
+      my-db:
+        condition: service_healthy
+    networks:
+      - demo
+
+  my-db:
+    container_name: my_db
+    image: mysql
+    restart: always
+    env_file:
+      - .env
+    expose:
+      - '3306'
+    volumes:
+      - my-db:/var/lib/mysql
+    networks:
+      - demo
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER --password=$$MYSQL_PASSWORD
+volumes:
+  my-db:
+
+networks:
+  demo:
+    driver: bridge
