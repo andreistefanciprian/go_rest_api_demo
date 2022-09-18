@@ -18,11 +18,11 @@ The operations that our endpoint will allow include:
 
 ## Requirements
 
-* Golang
-* Docker
-* Postman
+* Golang (for writing the application code)
+* Docker (for packaging and running the application)
+* curl (for testing)
 
-## Run app
+## Run app with docker-compose
 
 ```
 # start app and db
@@ -37,27 +37,37 @@ docker run --network go_web_api_demo_demo -it --rm --name mysql-client mysql \
 mysql -hmy_db -udemouser -pdemopassword -e "SELECT * from quickdemo.articles;"
 ```
 
-## Test app endpoints with Postman
+## Test app endpoints with curl
 
 ```
 # get all articles in db
-GET http://localhost:8080/articles
+curl -X GET -H 'Content-Type: application/json' http://localhost:8080/articles
 
 # create new article
-POST http://localhost:8080/article/create
-POST Body:
+curl -X POST http://localhost:8080/article/create \
+-H 'Content-Type: application/json' \
+-d '''
 {
-    "Title": "New Book Title",
+    "Title": "Book Title",
     "desc": "Book Description",
     "content": "Book Content"
 }
+'''
 
 # view article by id
-GET http://localhost:8080/article/view?id=186
+curl -X GET -H 'Content-Type: application/json' 'http://localhost:8080/article/view?id=32'
 
 # update article by id
-POST http://localhost:8080/article/update?id=186
+curl -X POST 'http://localhost:8080/article/update?id=32' \
+-H 'Content-Type: application/json' \
+-d '''
+{
+    "Title": "Updated Book Title",
+    "desc": "Book Description",
+    "content": "Book Content"
+}
+'''
 
 # delete article by id
-DEL http://localhost:8080/article/delete?id=127
+curl -X DELETE 'http://localhost:8080/article/delete?id=32'
 ```
