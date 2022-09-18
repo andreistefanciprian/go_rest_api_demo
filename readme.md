@@ -1,9 +1,10 @@
 ## Description
-golang CRUD REST API
-Used libraries:
-** net/http
-** gorm (mysql ORM)
-** viper (for storing db credentials)
+
+Been learning how to create a simple WEB API using these Golang packages:
+* net/http (standard library for using web servers)
+* gorm (mysql ORM)
+* viper (for reading db credentials from .env file)
+* encoding/json (for transforming data from go struct to json and vice versa)
 
 ## Create mysql container
 ```
