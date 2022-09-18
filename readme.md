@@ -50,6 +50,9 @@ POST Body:
 # view article by id
 GET http://localhost:8080/article/view?id=186
 
+# update article by id
+POST http://localhost:8080/article/view?id=186
+
 # delete article by id
 DEL http://localhost:8080/article/delete?id=127
 ```

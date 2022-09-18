@@ -30,13 +30,6 @@ func main() {
 		createArticle(Article{Title: "Book Title", Desc: "Book Description", Content: "Book Content"})
 	}
 
-	// // update article
-	// newArticle := Article{Title: "Updated Book Title 1", Desc: "Book Description 1", Content: "Book Content 1"}
-	// updateArticle(newArticle, 36)
-
-	// // delete article
-	// deleteArticle(38)
-
 	// getArticles()
 	getArticle(168)
 	startServer()

@@ -33,7 +33,6 @@ func getArticles() []Article {
 		panic("failed to connect database")
 	}
 	result := db.Find(&allArticles)
-	// fmt.Printf("Retrieved %v records from db.", result.RowsAffected)
 	fmt.Printf("Retrieved %v records from db.", result.RowsAffected)
 	return allArticles
 }
@@ -65,7 +64,6 @@ func getArticle(id int) Article {
 	var article Article
 	db.First(&article, id)
 	return article
-	// fmt.Println(article)
 }
 
 func updateArticle(article Article, id int) {
