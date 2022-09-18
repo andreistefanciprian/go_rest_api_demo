@@ -10,11 +10,11 @@ We're using these Golang packages:
 ## API Specification
 
 The operations that our endpoint will allow include:
-**Create** a new article in response to a valid POST request at /article/create.
-**Fetch** an article in response to a valid GET request at /article/view?id={id}.
-**Fetch** a list of all articles in response to a valid GET request at /articles.
-**Update** an article in response to a valid PUT request at /article/update?id={id}.
-**Delete** an article in response to a valid DELETE request at /article/delete?id={id}.
+* **Create** a new article in response to a valid POST request at /article/create.
+* **Fetch** an article in response to a valid GET request at /article/view?id={id}.
+* **Fetch** a list of all articles in response to a valid GET request at /articles.
+* **Update** an article in response to a valid PUT request at /article/update?id={id}.
+* **Delete** an article in response to a valid DELETE request at /article/delete?id={id}.
 
 ## Requirements
 
