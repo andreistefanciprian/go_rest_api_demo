@@ -1,10 +1,10 @@
-module learn_gorm
+module github.com/andreistefanciprian/go_web_api_demo
 
-go 1.17
+go 1.19
 
 require (
 	gorm.io/driver/mysql v1.3.6
-	gorm.io/gorm v1.23.9
+	gorm.io/gorm v1.23.10
 )
 
 require (
