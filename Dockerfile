@@ -3,11 +3,9 @@ FROM golang:1.17-buster AS build
 
 WORKDIR /app
 
-COPY go.mod ./
-COPY go.sum ./
-RUN go mod download
+COPY . .
 
-COPY *.go ./
+RUN go mod download
 
 RUN go build -o /web-api
 

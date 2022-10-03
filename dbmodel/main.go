@@ -1,34 +1,62 @@
-package main
+package dbmodel
 
 import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
+
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
-// home page
-func homePage(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Endpoint Hit: Home Page\n")
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
-		return
+var DbConnectionString string
+
+type Article struct {
+	gorm.Model
+	Title   string `json:"Title"`
+	Desc    string `json:"desc"`
+	Content string `json:"content"`
+}
+
+var Db *gorm.DB
+var err error
+
+func Connect(DbConnectionString string) {
+	Db, err = gorm.Open(mysql.Open(DbConnectionString), &gorm.Config{})
+	if err != nil {
+		fmt.Println(err.Error())
+		panic("failed to connect database")
 	}
-	w.Write([]byte("Hello from Book Library"))
+}
+
+func InitialMigration(Db *gorm.DB) {
+
+	Db.AutoMigrate(&Article{})
 }
 
 // get all articles
-func allArticles(w http.ResponseWriter, r *http.Request) {
+func getArticles(Db *gorm.DB) []Article {
+	var allArticles []Article
+	result := Db.Find(&allArticles)
+	fmt.Printf("Retrieved %v records from db.", result.RowsAffected)
+	return allArticles
+}
+
+func GetAllArticles(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\nEndpoint Hit: articles")
-	books := getArticles()
+	books := getArticles(Db)
 	w.Header().Set("content-type", "application/json")
 	json.NewEncoder(w).Encode(books)
 }
 
 // add article
-func addArticle(w http.ResponseWriter, r *http.Request) {
+func CreateArticle(Db *gorm.DB, article Article) {
+	Db.Create(&article) // pass pointer of data to Create
+}
+
+func AddArticle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\nEndpoint Hit: create")
 	if r.Method != "POST" {
 		w.Header().Set("Allow", "POST")
@@ -42,13 +70,17 @@ func addArticle(w http.ResponseWriter, r *http.Request) {
 	var article Article
 	json.Unmarshal(reqBody, &article)
 
-	createArticle(article)
+	CreateArticle(Db, article)
 	w.Header().Set("content-type", "application/json")
 	json.NewEncoder(w).Encode(article)
 }
 
 // delete article
-func removeArticle(w http.ResponseWriter, r *http.Request) {
+func deleteArticle(Db *gorm.DB, id int) {
+	Db.Unscoped().Delete(&Article{}, id) // hard delete
+}
+
+func RemoveArticle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\nEndpoint Hit: delete article")
 	if r.Method != "DELETE" {
 		w.Header().Set("Allow", "DELETE")
@@ -62,12 +94,18 @@ func removeArticle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deleteArticle(id)
+	deleteArticle(Db, id)
 	fmt.Fprintf(w, "Deleted article with ID %d", id)
 }
 
 // view article
-func viewArticle(w http.ResponseWriter, r *http.Request) {
+func getArticle(Db *gorm.DB, id int) Article {
+	var article Article
+	Db.First(&article, id)
+	return article
+}
+
+func ViewArticle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\nEndpoint Hit: view article")
 	if r.Method != "GET" {
 		w.Header().Set("Allow", "GET")
@@ -81,13 +119,17 @@ func viewArticle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	article := getArticle(id)
+	article := getArticle(Db, id)
 	w.Header().Set("content-type", "application/json")
 	json.NewEncoder(w).Encode(article)
 }
 
 // update article
-func changeArticle(w http.ResponseWriter, r *http.Request) {
+func updateArticle(Db *gorm.DB, article Article, id int) {
+	Db.Model(&article).Where("id = ?", id).Updates(article)
+}
+
+func ChangeArticle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\nEndpoint Hit: update article")
 	if r.Method != "POST" {
 		w.Header().Set("Allow", "POST")
@@ -107,18 +149,7 @@ func changeArticle(w http.ResponseWriter, r *http.Request) {
 	reqBody, _ := ioutil.ReadAll(r.Body)
 	var article Article
 	json.Unmarshal(reqBody, &article)
-	updateArticle(article, id)
+	updateArticle(Db, article, id)
 
 	fmt.Fprintf(w, "Updated article with ID %d", id)
-}
-
-// start server
-func startServer() {
-	http.HandleFunc("/", homePage)
-	http.HandleFunc("/articles", allArticles)
-	http.HandleFunc("/article/create", addArticle)
-	http.HandleFunc("/article/delete", removeArticle)
-	http.HandleFunc("/article/view", viewArticle)
-	http.HandleFunc("/article/update", changeArticle)
-	log.Fatal(http.ListenAndServe(":8080", nil))
 }
