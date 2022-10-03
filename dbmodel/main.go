@@ -11,8 +11,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var DbConnectionString string
-
 type Article struct {
 	gorm.Model
 	Title   string `json:"Title"`
@@ -20,6 +18,7 @@ type Article struct {
 	Content string `json:"content"`
 }
 
+var DbConnectionString string
 var Db *gorm.DB
 var err error
 
@@ -32,7 +31,6 @@ func Connect(DbConnectionString string) {
 }
 
 func InitialMigration(Db *gorm.DB) {
-
 	Db.AutoMigrate(&Article{})
 }
 
