@@ -2,6 +2,7 @@ package dbmodel
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -35,16 +36,19 @@ func InitialMigration(Db *gorm.DB) {
 }
 
 // get all articles
-func getArticles(Db *gorm.DB) []Article {
+func DbGetArticles(Db *gorm.DB) []Article {
 	var allArticles []Article
 	result := Db.Find(&allArticles)
 	fmt.Printf("Retrieved %v records from db.", result.RowsAffected)
+	// for i, v := range allArticles {
+	// 	fmt.Println(i, v)
+	// }
 	return allArticles
 }
 
 func GetAllArticles(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\nEndpoint Hit: articles")
-	books := getArticles(Db)
+	books := DbGetArticles(Db)
 	w.Header().Set("content-type", "application/json")
 	json.NewEncoder(w).Encode(books)
 }
@@ -74,8 +78,17 @@ func AddArticle(w http.ResponseWriter, r *http.Request) {
 }
 
 // delete article
-func deleteArticle(Db *gorm.DB, id int) {
-	Db.Unscoped().Delete(&Article{}, id) // hard delete
+func deleteArticle(Db *gorm.DB, id int) error {
+	var article Article
+	result := Db.Unscoped().Delete(&article, id) // hard delete
+	msg := fmt.Sprintf("Deleted %v records from db.", result.RowsAffected)
+	if result.RowsAffected == 0 {
+		fmt.Println(msg)
+		return errors.New(msg)
+	} else {
+		fmt.Println(msg)
+		return nil
+	}
 }
 
 func RemoveArticle(w http.ResponseWriter, r *http.Request) {
@@ -85,22 +98,31 @@ func RemoveArticle(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", 405)
 		return
 	}
-
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil || id < 1 {
 		http.NotFound(w, r)
 		return
 	}
-
-	deleteArticle(Db, id)
-	fmt.Fprintf(w, "Deleted article with ID %d", id)
+	result := deleteArticle(Db, id)
+	if result == nil {
+		fmt.Fprintf(w, "Deleted article with ID %d", id)
+	} else {
+		fmt.Fprintf(w, "%s\nCouldn't find article with ID %d", result, id)
+	}
 }
 
 // view article
-func getArticle(Db *gorm.DB, id int) Article {
+func getArticle(Db *gorm.DB, id int) (Article, error) {
 	var article Article
-	Db.First(&article, id)
-	return article
+	result := Db.First(&article, id)
+	msg := fmt.Sprintf("Retrieved %v records from db.", result.RowsAffected)
+	if result.RowsAffected == 0 {
+		fmt.Println(msg)
+		return Article{}, errors.New(msg)
+	} else {
+		fmt.Println(msg)
+		return article, nil
+	}
 }
 
 func ViewArticle(w http.ResponseWriter, r *http.Request) {
@@ -117,14 +139,26 @@ func ViewArticle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	article := getArticle(Db, id)
-	w.Header().Set("content-type", "application/json")
-	json.NewEncoder(w).Encode(article)
+	article, err := getArticle(Db, id)
+	if err != nil {
+		fmt.Fprintf(w, "%s\nCouldn't find article with ID %d", err, id)
+	} else {
+		w.Header().Set("content-type", "application/json")
+		json.NewEncoder(w).Encode(article)
+	}
 }
 
 // update article
-func updateArticle(Db *gorm.DB, article Article, id int) {
-	Db.Model(&article).Where("id = ?", id).Updates(article)
+func updateArticle(Db *gorm.DB, article Article, id int) error {
+	result := Db.Model(&article).Where("id = ?", id).Updates(article)
+	msg := fmt.Sprintf("Updated %v records from db.", result.RowsAffected)
+	if result.RowsAffected == 0 {
+		fmt.Println(msg)
+		return errors.New(msg)
+	} else {
+		fmt.Println(msg)
+		return nil
+	}
 }
 
 func ChangeArticle(w http.ResponseWriter, r *http.Request) {
@@ -147,7 +181,11 @@ func ChangeArticle(w http.ResponseWriter, r *http.Request) {
 	reqBody, _ := ioutil.ReadAll(r.Body)
 	var article Article
 	json.Unmarshal(reqBody, &article)
-	updateArticle(Db, article, id)
 
-	fmt.Fprintf(w, "Updated article with ID %d", id)
+	result := updateArticle(Db, article, id)
+	if result != nil {
+		fmt.Fprintf(w, "%s\nCouldn't find article with ID %d", result, id)
+	} else {
+		fmt.Fprintf(w, "Updated article with ID %d", id)
+	}
 }
