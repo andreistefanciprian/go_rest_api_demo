@@ -36,29 +36,47 @@ func InitialMigration(Db *gorm.DB) {
 }
 
 // get all articles
-func DbGetArticles(Db *gorm.DB) []Article {
+func DbViewArticles(Db *gorm.DB) []Article {
 	var allArticles []Article
 	result := Db.Find(&allArticles)
 	fmt.Printf("Retrieved %v records from db.", result.RowsAffected)
-	// for i, v := range allArticles {
-	// 	fmt.Println(i, v)
-	// }
 	return allArticles
 }
 
-func GetAllArticles(w http.ResponseWriter, r *http.Request) {
+func ViewArticles(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\nEndpoint Hit: articles")
-	books := DbGetArticles(Db)
+	books := DbViewArticles(Db)
 	w.Header().Set("content-type", "application/json")
 	json.NewEncoder(w).Encode(books)
 }
 
+// delete all articles
+func DbDeleteArticles(Db *gorm.DB) {
+	var allArticles []Article
+	resultFind := Db.Find(&allArticles)
+	fmt.Printf("Retrieved %v records from db.", resultFind.RowsAffected)
+	result := Db.Unscoped().Delete(&allArticles) // hard delete
+	msg := fmt.Sprintf("Deleted %v records from db.", result.RowsAffected)
+	fmt.Println(msg)
+}
+
+func DeleteArticles(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("\nEndpoint Hit: delete all articles")
+	if r.Method != "DELETE" {
+		w.Header().Set("Allow", "DELETE")
+		http.Error(w, "Method Not Allowed", 405)
+		return
+	}
+	DbDeleteArticles(Db)
+	fmt.Fprintf(w, "Deleted all articles.")
+}
+
 // add article
-func CreateArticle(Db *gorm.DB, article Article) {
+func DbCreateArticle(Db *gorm.DB, article Article) {
 	Db.Create(&article) // pass pointer of data to Create
 }
 
-func AddArticle(w http.ResponseWriter, r *http.Request) {
+func CreateArticle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\nEndpoint Hit: create")
 	if r.Method != "POST" {
 		w.Header().Set("Allow", "POST")
@@ -72,13 +90,13 @@ func AddArticle(w http.ResponseWriter, r *http.Request) {
 	var article Article
 	json.Unmarshal(reqBody, &article)
 
-	CreateArticle(Db, article)
+	DbCreateArticle(Db, article)
 	w.Header().Set("content-type", "application/json")
 	json.NewEncoder(w).Encode(article)
 }
 
 // delete article
-func deleteArticle(Db *gorm.DB, id int) error {
+func DbDeleteArticle(Db *gorm.DB, id int) error {
 	var article Article
 	result := Db.Unscoped().Delete(&article, id) // hard delete
 	msg := fmt.Sprintf("Deleted %v records from db.", result.RowsAffected)
@@ -91,7 +109,7 @@ func deleteArticle(Db *gorm.DB, id int) error {
 	}
 }
 
-func RemoveArticle(w http.ResponseWriter, r *http.Request) {
+func DeleteArticle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\nEndpoint Hit: delete article")
 	if r.Method != "DELETE" {
 		w.Header().Set("Allow", "DELETE")
@@ -103,7 +121,7 @@ func RemoveArticle(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	result := deleteArticle(Db, id)
+	result := DbDeleteArticle(Db, id)
 	if result == nil {
 		fmt.Fprintf(w, "Deleted article with ID %d", id)
 	} else {
@@ -112,7 +130,7 @@ func RemoveArticle(w http.ResponseWriter, r *http.Request) {
 }
 
 // view article
-func getArticle(Db *gorm.DB, id int) (Article, error) {
+func DbViewArticle(Db *gorm.DB, id int) (Article, error) {
 	var article Article
 	result := Db.First(&article, id)
 	msg := fmt.Sprintf("Retrieved %v records from db.", result.RowsAffected)
@@ -139,7 +157,7 @@ func ViewArticle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	article, err := getArticle(Db, id)
+	article, err := DbViewArticle(Db, id)
 	if err != nil {
 		fmt.Fprintf(w, "%s\nCouldn't find article with ID %d", err, id)
 	} else {
@@ -149,7 +167,7 @@ func ViewArticle(w http.ResponseWriter, r *http.Request) {
 }
 
 // update article
-func updateArticle(Db *gorm.DB, article Article, id int) error {
+func dbUpdateArticle(Db *gorm.DB, article Article, id int) error {
 	result := Db.Model(&article).Where("id = ?", id).Updates(article)
 	msg := fmt.Sprintf("Updated %v records from db.", result.RowsAffected)
 	if result.RowsAffected == 0 {
@@ -161,7 +179,7 @@ func updateArticle(Db *gorm.DB, article Article, id int) error {
 	}
 }
 
-func ChangeArticle(w http.ResponseWriter, r *http.Request) {
+func UpdateArticle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\nEndpoint Hit: update article")
 	if r.Method != "POST" {
 		w.Header().Set("Allow", "POST")
@@ -182,7 +200,7 @@ func ChangeArticle(w http.ResponseWriter, r *http.Request) {
 	var article Article
 	json.Unmarshal(reqBody, &article)
 
-	result := updateArticle(Db, article, id)
+	result := dbUpdateArticle(Db, article, id)
 	if result != nil {
 		fmt.Fprintf(w, "%s\nCouldn't find article with ID %d", result, id)
 	} else {

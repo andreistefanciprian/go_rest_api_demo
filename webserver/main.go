@@ -21,10 +21,11 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 // start server
 func StartServer() {
 	http.HandleFunc("/", homePage)
-	http.HandleFunc("/articles", dbmodel.GetAllArticles)
-	http.HandleFunc("/article/create", dbmodel.AddArticle)
-	http.HandleFunc("/article/delete", dbmodel.RemoveArticle)
+	http.HandleFunc("/articles", dbmodel.ViewArticles)
+	http.HandleFunc("/article/create", dbmodel.CreateArticle)
+	http.HandleFunc("/article/delete", dbmodel.DeleteArticle)
 	http.HandleFunc("/article/view", dbmodel.ViewArticle)
-	http.HandleFunc("/article/update", dbmodel.ChangeArticle)
+	http.HandleFunc("/article/update", dbmodel.UpdateArticle)
+	http.HandleFunc("/articles/delete_all", dbmodel.DeleteArticles)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

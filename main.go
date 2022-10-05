@@ -23,7 +23,7 @@ func main() {
 
 	// insert articles
 	for i := 0; i < 5; i++ {
-		dbmodel.CreateArticle(dbmodel.Db, dbmodel.Article{Title: "Book Title", Desc: "Book Description", Content: "Book Content"})
+		dbmodel.DbCreateArticle(dbmodel.Db, dbmodel.Article{Title: "Book Title", Desc: "Book Description", Content: "Book Content"})
 	}
 
 	// start web api

@@ -70,4 +70,7 @@ curl -X POST 'http://localhost:8080/article/update?id=32' \
 
 # delete article by id
 curl -X DELETE 'http://localhost:8080/article/delete?id=32'
+
+# delete all articles
+curl -X DELETE 'http://localhost:8080/articles/delete_all_'
 ```
