@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} Welcome to FlaskBlog {% endblock %}</h1>
+    <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Book Title</th>
+            <th scope="col">Book Description</th>
+            <th scope="col">Book Content</th>
+            <th scope="col">Delete</th>
+            <th scope="col">Update</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for article in articles %}
+          <tr>
+            <th scope="row">{{ article['ID'] }}</th>
+            <td>{{ article['Title'] }}</td>
+            <td>{{ article['desc'] }}</td>
+            <td>{{ article['content'] }}</td>
+            <td><button type="button" class="btn btn-outline-warning btn-sm">Delete</button></td>
+            <td><button type="button" class="btn btn-outline-primary btn-sm">Update</button></td>
+          </tr>
+          {% endfor %}  
+        </tbody>
+      </table>
+
+{% endblock %}
