@@ -62,8 +62,8 @@ func DbDeleteArticles(Db *gorm.DB) {
 
 func DeleteArticles(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\nEndpoint Hit: delete all articles")
-	if r.Method != "DELETE" {
-		w.Header().Set("Allow", "DELETE")
+	if r.Method != "POST" {
+		w.Header().Set("Allow", "POST")
 		http.Error(w, "Method Not Allowed", 405)
 		return
 	}
@@ -111,8 +111,8 @@ func DbDeleteArticle(Db *gorm.DB, id int) error {
 
 func DeleteArticle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\nEndpoint Hit: delete article")
-	if r.Method != "DELETE" {
-		w.Header().Set("Allow", "DELETE")
+	if r.Method != "POST" {
+		w.Header().Set("Allow", "POST")
 		http.Error(w, "Method Not Allowed", 405)
 		return
 	}
