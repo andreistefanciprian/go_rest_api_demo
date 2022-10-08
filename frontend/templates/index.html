@@ -1,11 +1,12 @@
+
 {% extends 'base.html' %}
 
 {% block content %}
     <h1>{% block title %} Welcome to Book Library {% endblock %}</h1>
 
-    <div class="d-grid gap-2 d-md-block">
+    <!-- <div class="d-grid gap-2 d-md-block">
       <button class="btn btn-outline-success btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#addArticle">Add new Book</button>
-    </div>
+    </div> -->
 
     <table class="table">
         <thead>
@@ -15,7 +16,7 @@
             <th scope="col">Book Description</th>
             <th scope="col">Book Content</th>
             <th scope="col">Delete</th>
-            <th scope="col">Update</th>
+            <!-- <th scope="col">Update</th> -->
           </tr>
         </thead>
         <tbody>
@@ -26,44 +27,8 @@
             <td>{{ article['desc'] }}</td>
             <td>{{ article['content'] }}</td>
             <td><button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteArticle{{ article['ID'] }}">Delete</button></td>
-            <td><button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#updateArticle{{ article['ID'] }}">Update</button></td>
+            <!-- <td><button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#updateArticle{{ article['ID'] }}">Update</button></td> -->
           </tr>
-
-
-          <!-- Modal Add Article-->
-          <div class="modal fade" tabindex="-1" aria-labelledby="addArticleLabel" aria-hidden="true" id="addArticle">
-            <div class="modal-dialog">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title" id="addArticleLabel">Add new article</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                  <form>
-                    <div class="mb-3">
-                      <label for="recipient-name" class="col-form-label">Title:</label>
-                      <input type="text" class="form-control" id="recipient-name">
-                    </div>
-                    <div class="mb-3">
-                      <label for="recipient-name" class="col-form-label">Description:</label>
-                      <input type="text" class="form-control" id="recipient-name">
-                    </div>
-                    <div class="mb-3">
-                      <label for="message-text" class="col-form-label">Content:</label>
-                      <textarea class="form-control" id="message-text"></textarea>
-                    </div>
-                  </form>
-                </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-                  <form action="{{ url_for('delete_article', article_id=article['ID']) }}" method="POST">
-                    <input class="btn btn-outline-success btn-sm" type="submit" value="Add">
-                  </form>
-                </div>
-              </div>
-            </div>
-          </div>
-       
 
           <!-- Modal Update Article-->
           <div class="modal fade" tabindex="-1" aria-labelledby="updateArticleLabel" aria-hidden="true" id="updateArticle{{ article['ID'] }}">

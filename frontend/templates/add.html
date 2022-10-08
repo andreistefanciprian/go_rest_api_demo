@@ -1,0 +1,43 @@
+
+
+{% extends "base.html" %}
+
+{% block content %}
+
+  <div class="jumbotron">
+    <h1 class="display-4">Hello, readers!</h1>
+    <p class="lead">Have a new Book that needs to be added to the library?</p>
+    <hr class="my-4">
+    <p>Please use the form below to add your book.</p>
+    
+    <form method="POST" >
+      {# This hidden_tag is a CSRF security feature. #}
+      {{ form.hidden_tag() }}
+
+      <p class="lead">
+        <div class="input-group">
+          <span class="input-group-text">{{ form.title.label }}</span>
+          {{ form.title(class="form-control") }}
+        </div>
+      </p>
+      <p class="lead">
+        <div class="input-group">
+          <span class="input-group-text">{{ form.description.label }}</span>
+          {{ form.description(class="form-control") }}
+        </div>
+      </p>
+      <p class="lead">
+        <div class="input-group">
+          <span class="input-group-text">{{ form.content.label }}</span>
+          {{ form.content(class="form-control") }}
+        </div>
+      </p>
+      <p class="lead">
+        {{ form.submit(class="btn btn-outline-primary btn-lg") }}
+      </p>
+    </form>
+  </div>
+{% endblock %}
+
+
+
