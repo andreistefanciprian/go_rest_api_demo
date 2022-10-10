@@ -24,12 +24,17 @@ The operations that our endpoint will allow include:
 
 ## Run app with docker-compose
 
+Note: added a small flask UI that talks with the REST API
+
 ```
-# start app and db
+# start app
 docker-compose up --build
 
 # remove containers
 docker-compose down
+ 
+# visit frontend page
+http://localhost:8090/articles
 
 # debug commands
 docker network ls
@@ -37,10 +42,10 @@ docker run --network go_web_api_demo_demo -it --rm --name mysql-client mysql \
 mysql -hmy_db -udemouser -pdemopassword -e "SELECT * from quickdemo.articles;"
 ```
 
-## Test app endpoints with curl
+## Test REST API endpoints with curl
 
 ```
-# get all articles in db
+# get all articles
 curl -X GET -H 'Content-Type: application/json' http://localhost:8080/articles
 
 # create new article

@@ -1,0 +1,12 @@
+version: '3.3'
+services:
+  frontend:
+    container_name: frontend
+    image: frontend:latest
+    build: .
+    ports: 
+      - 8090:5000 
+    restart: on-failure
+    env_file:
+      - .vars
+  
