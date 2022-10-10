@@ -12,7 +12,7 @@ REST_API_PORT=os.environ.get('REST_API_PORT')
 api_url = f'http://{REST_API_HOST}:{REST_API_PORT}'
 
 
-# GET
+# GET ALL ARTICLES
 def getAllArticles(url):
     """Get a list with all articles in json format."""
     uri = f'{url}/articles'
