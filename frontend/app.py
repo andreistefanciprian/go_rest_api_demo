@@ -1,14 +1,15 @@
 from flask import Flask, url_for, redirect, render_template
 import requests
 import json
-
 from flask_bootstrap import Bootstrap5
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired
+import os
 
-
-api_url = "http://localhost:8080"
+REST_API_HOST=os.environ.get('REST_API_HOST')
+REST_API_PORT=os.environ.get('REST_API_PORT')
+api_url = f'http://{REST_API_HOST}:{REST_API_PORT}'
 
 
 # GET
@@ -51,19 +52,20 @@ bootstrap = Bootstrap5(app)
 
 @app.route('/')
 def hello():
-    return 'Hello, World!'
+    # return "Welcome to the Library"
+    return redirect(url_for('articles'))
 
 # endpoint for viewing all records
 @app.route('/articles', methods = ['GET'])
-def index():
+def articles():
     articles = getAllArticles(api_url)
-    return render_template('index.html', articles=articles)
+    return render_template('articles.html', articles=articles)
 
 # endpoint for deleting a record
 @app.route('/article/delete?id=<int:article_id>', methods = ['POST'])
 def delete_article(article_id):
     deleteArticleById(api_url, article_id)
-    return redirect(url_for('index'))
+    return redirect(url_for('articles'))
 
 class AddArticle(FlaskForm):
     title = StringField('Book Title', validators=[DataRequired()])
@@ -85,7 +87,7 @@ def add_article():
         article = { "Title": title, "desc": description, "content": content }
         article = json.dumps(article)
         createArticle(api_url, article)
-        return redirect(url_for('index'))
+        return redirect(url_for('articles'))
     return render_template('add.html',form=form)
 
 
@@ -111,7 +113,10 @@ def update_article():
         article = { "Title": title, "desc": description, "content": content }
         article = json.dumps(article)
         updateArticleById(api_url, id, article)
-        return redirect(url_for('index'))
+        return redirect(url_for('articles'))
     return render_template('update.html',form=form)
 
-app.run(debug=True)
+if __name__ == "__main__":
+    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', debug=True, port=port)

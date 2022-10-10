@@ -1,10 +1,30 @@
 version: '3.3'
 services:
-  my-app:
-    container_name: my_app
+  frontend:
+    container_name: frontend
+    image: frontend:latest
+    build: ./frontend
+    ports: 
+      - 8090:5000 
+    restart: on-failure
+    # env_file: ./frontend/.vars
+    depends_on:
+      my-db:
+        condition: service_healthy
+    environment:
+      - REST_API_HOST=backend
+      - REST_API_PORT=8080
+    networks:
+      - demo
+
+  backend:
+    container_name: backend
+    image: backend:latest
     build: .
     ports: 
-      - 8080:8080 
+      - 8080:8080
+    expose:
+      - '8080'
     restart: on-failure
     env_file:
       - .env
