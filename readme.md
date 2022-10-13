@@ -82,8 +82,10 @@ curl -X POST 'http://localhost:8080/article/update?id=32' \
 '''
 
 # delete article by id
-curl -X DELETE -H "Token:$JWT_TOKEN" 'http://localhost:8080/article/delete?id=32'
+curl -X POST 'http://localhost:8080/article/delete?id=32' \
+-H "Token:$JWT_TOKEN"
 
 # delete all articles
-curl -X DELETE -H "Token:$JWT_TOKEN" 'http://localhost:8080/articles/delete_all_'
+curl -X POST 'http://localhost:8080/articles/delete_all' \
+-H "Token:$JWT_TOKEN" 
 ```
