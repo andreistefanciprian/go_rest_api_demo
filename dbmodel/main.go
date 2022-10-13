@@ -193,13 +193,11 @@ func UpdateArticle(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", 405)
 		return
 	}
-
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil || id < 1 {
 		http.NotFound(w, r)
 		return
 	}
-
 	// get the body of our POST request
 	// unmarshal this into a new Article struct
 	// append this to our Articles array.
@@ -224,8 +222,6 @@ func JwtAuthentication(endpoint http.HandlerFunc) http.Handler {
 		_, exists := headers["Token"]
 		if exists {
 			tokenString := r.Header.Get("Token")
-			log.Print(string(mySigningKey))
-			log.Print(tokenString)
 			// validate token
 			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
