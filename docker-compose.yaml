@@ -27,10 +27,15 @@ services:
     expose:
       - '8080'
     restart: on-failure
-    env_file:
-      - .env
+    # env_file:
+    #   - .env
     environment:
       - JWT_SECRET_KEY=your-256-bit-secret
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=quickdemo
+      - MYSQL_USER=demouser
+      - MYSQL_PASSWORD=demopassword
+      - MYSQL_HOST=my_db
     depends_on:
       my-db:
         condition: service_healthy
@@ -41,8 +46,15 @@ services:
     container_name: my_db
     image: mysql
     restart: always
-    env_file:
-      - .env
+    # env_file:
+    #   - .env
+    environment:
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=quickdemo
+      - MYSQL_USER=demouser
+      - MYSQL_PASSWORD=demopassword
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_HOST=my_db
     expose:
       - '3306'
     # ports: 
