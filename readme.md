@@ -30,7 +30,7 @@ The operations that our endpoint will allow include:
 # start app
 docker-compose up --build
 
-# remove containers
+# stop app
 docker-compose down
 
 # debug commands
@@ -41,17 +41,21 @@ mysql -hmy_db -udemouser -pdemopassword -e "SELECT * from quickdemo.articles;"
 
 ## Test REST API endpoints with curl
 
+###### Generate jwt token with https://jwt.io/
+Make sure you use the same secret key (JWT_SECRET_KEY) to generate a valid JWT token.
 ```
-# generate jwt token from https://jwt.io/
-# make sure you use the same secret key (JWT_SECRET_KEY) to generate a valid JWT token
-JWT_TOKEN="<paste here jwt token>"
+export JWT_TOKEN="<paste here jwt token>"
+```
 
-# get all articles
+###### Get all articles
+```
 curl -X GET http://localhost:8080/articles \
 -H 'Content-Type: application/json' \
 -H "Token:$JWT_TOKEN" 
+```
 
-# create new article
+###### Create new article
+```
 curl -X POST http://localhost:8080/article/create \
 -H 'Content-Type: application/json' \
 -H "Token:$JWT_TOKEN" \
@@ -62,14 +66,17 @@ curl -X POST http://localhost:8080/article/create \
     "content": "Book Content"
 }
 '''
+```
 
-# view article by id
+###### View article by id
+```
 curl -X GET 'http://localhost:8080/article/view?id=32' \
 -H 'Content-Type: application/json' \
 -H "Token:$JWT_TOKEN"
+```
 
-
-# update article by id
+###### Update article by id
+```
 curl -X POST 'http://localhost:8080/article/update?id=32' \
 -H 'Content-Type: application/json' \
 -H "Token:$JWT_TOKEN"
@@ -80,12 +87,16 @@ curl -X POST 'http://localhost:8080/article/update?id=32' \
     "content": "Book Content"
 }
 '''
+```
 
-# delete article by id
+###### Delete article by id
+```
 curl -X POST 'http://localhost:8080/article/delete?id=32' \
 -H "Token:$JWT_TOKEN"
+```
 
-# delete all articles
+###### Delete all articles
+```
 curl -X POST 'http://localhost:8080/articles/delete_all' \
 -H "Token:$JWT_TOKEN" 
 ```
