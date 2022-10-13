@@ -20,12 +20,13 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 
 // start server
 func StartServer() {
-	http.HandleFunc("/", homePage)
-	http.HandleFunc("/articles", dbmodel.ViewArticles)
-	http.HandleFunc("/article/create", dbmodel.CreateArticle)
-	http.HandleFunc("/article/delete", dbmodel.DeleteArticle)
-	http.HandleFunc("/article/view", dbmodel.ViewArticle)
-	http.HandleFunc("/article/update", dbmodel.UpdateArticle)
-	http.HandleFunc("/articles/delete_all", dbmodel.DeleteArticles)
+	log.Print("Listening on port 8080 ...")
+	http.Handle("/", dbmodel.JwtAuthentication(homePage))
+	http.Handle("/articles", dbmodel.JwtAuthentication(dbmodel.ViewArticles))
+	http.Handle("/article/create", dbmodel.JwtAuthentication(dbmodel.CreateArticle))
+	http.Handle("/article/delete", dbmodel.JwtAuthentication(dbmodel.DeleteArticle))
+	http.Handle("/article/view", dbmodel.JwtAuthentication(dbmodel.ViewArticle))
+	http.Handle("/article/update", dbmodel.JwtAuthentication(dbmodel.UpdateArticle))
+	http.Handle("/articles/delete_all", dbmodel.JwtAuthentication(dbmodel.DeleteArticles))
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
