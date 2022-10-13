@@ -5,13 +5,22 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 
+	jwt "github.com/golang-jwt/jwt/v4"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
+var DbConnectionString string
+var Db *gorm.DB
+var err error
+var mySigningKey = []byte(os.Getenv("JWT_SECRET_KEY"))
+
+// Article struct holds the data table in the db
 type Article struct {
 	gorm.Model
 	Title   string `json:"Title"`
@@ -19,10 +28,7 @@ type Article struct {
 	Content string `json:"content"`
 }
 
-var DbConnectionString string
-var Db *gorm.DB
-var err error
-
+// Connect establishes connection to mysql
 func Connect(DbConnectionString string) {
 	Db, err = gorm.Open(mysql.Open(DbConnectionString), &gorm.Config{})
 	if err != nil {
@@ -31,6 +37,7 @@ func Connect(DbConnectionString string) {
 	}
 }
 
+// InitialMigration creates the table if it doesn't exist
 func InitialMigration(Db *gorm.DB) {
 	Db.AutoMigrate(&Article{})
 }
@@ -206,4 +213,43 @@ func UpdateArticle(w http.ResponseWriter, r *http.Request) {
 	} else {
 		fmt.Fprintf(w, "Updated article with ID %d", id)
 	}
+}
+
+// middleware for parsing HTTP Token Header from incoming requests
+func JwtAuthentication(endpoint http.HandlerFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Print("Executing middleware")
+		// verify if Token header exists
+		headers := r.Header
+		_, exists := headers["Token"]
+		if exists {
+			tokenString := r.Header.Get("Token")
+			log.Print(string(mySigningKey))
+			log.Print(tokenString)
+			// validate token
+			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+				}
+				return mySigningKey, nil
+			})
+			if err != nil {
+				fmt.Println(err)
+			}
+			// if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			// 	fmt.Println(claims)
+			if token.Valid {
+				log.Print("JWT Auth is successful!")
+				endpoint.ServeHTTP(w, r)
+			} else {
+				log.Print("JWT Auth Token is NOT valid!")
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte("Not Authorised!\nJWT Auth Token is NOT valid!"))
+			}
+		} else {
+			log.Print("JWT Auth Token HTTP Header is NOT Present!")
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Not Authorised!\nJWT Auth Token HTTP Header is NOT Present!"))
+		}
+	})
 }
