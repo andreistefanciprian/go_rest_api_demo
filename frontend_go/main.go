@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt" // New import
 	"html/template"
@@ -73,13 +74,6 @@ func home(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("ERROR Unmarshaling of JSON failed.")
 	}
 
-	// fmt.Printf("%v\n", allArticles)
-	// for key, value := range allArticles {
-	// 	fmt.Println(key, value)
-	// }
-	// fmt.Printf("%#v\n", allArticles)
-	// fmt.Fprintf(w, string(body))
-
 	files := []string{
 		"./templates/base.tmpl",
 		"./templates/pages/home.tmpl",
@@ -100,9 +94,62 @@ func home(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func addBook(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/addbook" {
+		http.NotFound(w, r)
+		return
+	}
+
+	if r.Method == http.MethodPost {
+		fmt.Println("Hitting POST method")
+		validToken, err := GenerateJWT()
+		if err != nil {
+			fmt.Println("Failed to generate token")
+		}
+		newBook := &Article{
+			Title:   r.PostFormValue("title"),
+			Desc:    r.PostFormValue("description"),
+			Content: r.PostFormValue("content"),
+		}
+		marshal_struct, _ := json.Marshal(newBook)
+
+		client := &http.Client{}
+		endpointUrl := fmt.Sprintf("%s/article/create", backendUrl)
+		req, _ := http.NewRequest("POST", endpointUrl, bytes.NewBuffer(marshal_struct))
+		req.Header.Set("Token", validToken)
+		res, err := client.Do(req)
+		if err != nil {
+			fmt.Fprintf(w, "Error: %s", err.Error())
+		}
+		if res.StatusCode == 200 {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+		}
+	}
+
+	files := []string{
+		"./templates/base.tmpl",
+		"./templates/pages/addbook.tmpl",
+		"./templates/partials/nav.tmpl",
+		"./templates/partials/footer.tmpl",
+	}
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		log.Print(err.Error())
+		http.Error(w, "Internal Server Error - pars", 500)
+		return
+	}
+
+	err = ts.ExecuteTemplate(w, "base", nil)
+	if err != nil {
+		log.Print(err.Error())
+		http.Error(w, "Internal Server Error - exec templ", 500)
+	}
+}
+
 func handleRequests() {
 	fmt.Println("Starting server on port 5002 ...")
 	mux := http.NewServeMux()
+	mux.HandleFunc("/addbook", addBook)
 	mux.HandleFunc("/", home)
 	http.ListenAndServe(":5002", mux)
 }
