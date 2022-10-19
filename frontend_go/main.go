@@ -101,7 +101,6 @@ func addBook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodPost {
-		fmt.Println("Hitting POST method")
 		validToken, err := GenerateJWT()
 		if err != nil {
 			fmt.Println("Failed to generate token")
@@ -146,10 +145,63 @@ func addBook(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func updateBook(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/updatebook" {
+		http.NotFound(w, r)
+		return
+	}
+
+	if r.Method == http.MethodPost {
+		validToken, err := GenerateJWT()
+		if err != nil {
+			fmt.Println("Failed to generate token")
+		}
+		id := r.PostFormValue("id")
+		newBook := &Article{
+			Title:   r.PostFormValue("title"),
+			Desc:    r.PostFormValue("description"),
+			Content: r.PostFormValue("content"),
+		}
+		marshal_struct, _ := json.Marshal(newBook)
+
+		client := &http.Client{}
+		endpointUrl := fmt.Sprintf("%s/article/update?id=%s", backendUrl, id)
+		req, _ := http.NewRequest("POST", endpointUrl, bytes.NewBuffer(marshal_struct))
+		req.Header.Set("Token", validToken)
+		res, err := client.Do(req)
+		if err != nil {
+			fmt.Fprintf(w, "Error: %s", err.Error())
+		}
+		if res.StatusCode == 200 {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+		}
+	}
+
+	files := []string{
+		"./templates/base.tmpl",
+		"./templates/pages/updatebook.tmpl",
+		"./templates/partials/nav.tmpl",
+		"./templates/partials/footer.tmpl",
+	}
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		log.Print(err.Error())
+		http.Error(w, "Internal Server Error - pars", 500)
+		return
+	}
+
+	err = ts.ExecuteTemplate(w, "base", nil)
+	if err != nil {
+		log.Print(err.Error())
+		http.Error(w, "Internal Server Error - exec templ", 500)
+	}
+}
+
 func handleRequests() {
 	fmt.Println("Starting server on port 5002 ...")
 	mux := http.NewServeMux()
 	mux.HandleFunc("/addbook", addBook)
+	mux.HandleFunc("/updatebook", updateBook)
 	mux.HandleFunc("/", home)
 	http.ListenAndServe(":5002", mux)
 }
