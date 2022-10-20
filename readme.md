@@ -8,7 +8,7 @@ We're using these Golang packages:
 * encoding/json (for transforming data from go struct to json and vice versa)
 * jwt-go (for authenticating requests with JWT tokens)
 
-## API Specification
+## API Specification (backend)
 
 The operations that our endpoint will allow include:
 * **Create** a new article in response to a valid POST request at /article/create.
@@ -16,6 +16,11 @@ The operations that our endpoint will allow include:
 * **Fetch** a list of all articles in response to a valid GET request at /articles.
 * **Update** an article in response to a valid PUT request at /article/update?id={id}.
 * **Delete** an article in response to a valid DELETE request at /article/delete?id={id}.
+
+
+## Frontend
+
+Working on go frontend.
 
 ## Requirements
 
@@ -33,10 +38,7 @@ docker-compose up --build
 # stop app
 docker-compose down
 
-# debug commands
-docker network ls
-docker run --network go_web_api_demo_demo -it --rm --name mysql-client mysql \
-mysql -hmy_db -udemouser -pdemopassword -e "SELECT * from quickdemo.articles;"
+# access frontend at localhost:8090/
 ```
 
 ## Test REST API endpoints with curl

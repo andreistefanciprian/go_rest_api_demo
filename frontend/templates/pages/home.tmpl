@@ -1,0 +1,53 @@
+{{define "title"}}View Books{{end}}
+
+{{define "main"}}
+
+<div class="container">
+    <table class="table table-striped">
+    <thead>
+        <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Book Title</th>
+            <th scope="col">Book Description</th>
+            <th scope="col">Book Content</th>
+            <th scope="col">Delete</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .}}
+            <tr>
+                <th scope="row">{{.Id}}</th>
+                <td>{{.Title}}</td>
+                <td>{{.Desc}}</td>
+                <td>{{.Content}}</td>
+                <td><button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteArticle{{.Id}}">Delete</button></td>
+            </tr>
+        
+            <!-- Modal Delete Article-->
+            <div class="modal fade" id="deleteArticle{{.Id}}" tabindex="-1" aria-labelledby="deleteArticleLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                    <h5 class="modal-title" id="deleteArticleLabel">Delete article #{{.Id}}</h5>
+                    </div>
+                    <div class="modal-body">
+                    Are you sure you want to delete article {{.Id}}: <br>"{{.Title}}"
+                    </div>
+
+                    <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    <form action="#" method="POST">
+                        <input class="btn btn-outline-danger btn-sm" type="submit" value="Delete">
+                    </form>
+                    
+                    </div>
+                </div>
+                </div>
+            </div>
+
+        {{end}}
+    </tbody>
+    </table>
+</div>
+
+{{end}}
