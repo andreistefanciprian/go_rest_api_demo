@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -28,6 +29,8 @@ type Article struct {
 	Content string `json:"content"`
 }
 
+type Articles []*Article
+
 // Connect establishes connection to mysql
 func Connect(DbConnectionString string) {
 	Db, err = gorm.Open(mysql.Open(DbConnectionString), &gorm.Config{})
@@ -42,19 +45,24 @@ func InitialMigration(Db *gorm.DB) {
 	Db.AutoMigrate(&Article{})
 }
 
-// get all articles
-func DbViewArticles(Db *gorm.DB) []Article {
-	var allArticles []Article
-	result := Db.Find(&allArticles)
+func (a *Articles) getArticles(Db *gorm.DB) error {
+	result := Db.Find(&a)
+	if result.Error != nil {
+		return result.Error
+	}
 	fmt.Printf("Retrieved %v records from db.", result.RowsAffected)
-	return allArticles
+	return nil
 }
 
-func ViewArticles(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("\nEndpoint Hit: articles")
-	books := DbViewArticles(Db)
-	w.Header().Set("content-type", "application/json")
-	json.NewEncoder(w).Encode(books)
+func (a *Articles) JSONViewArticles(w io.Writer) error {
+	err := a.getArticles(Db)
+	if err != nil {
+		fmt.Println("Error retrieving articles from DB.")
+		return err
+	}
+	e := json.NewEncoder(w)
+	e.Encode(a)
+	return nil
 }
 
 // delete all articles
@@ -78,28 +86,25 @@ func DeleteArticles(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Deleted all articles.")
 }
 
-// add article
-func DbCreateArticle(Db *gorm.DB, article Article) {
-	Db.Create(&article) // pass pointer of data to Create
+func addArticle(Db *gorm.DB, article Article) error {
+	result := Db.Create(&article) // pass pointer of data to Create
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
 }
 
-func CreateArticle(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("\nEndpoint Hit: create")
-	if r.Method != "POST" {
-		w.Header().Set("Allow", "POST")
-		http.Error(w, "Method Not Allowed", 405)
-		return
-	}
-	// get the body of our POST request
-	// unmarshal this into a new Article struct
-	// append this to our Articles array.
-	reqBody, _ := ioutil.ReadAll(r.Body)
-	var article Article
-	json.Unmarshal(reqBody, &article)
+func (a *Article) FromJSON(r io.Reader) error {
+	e := json.NewDecoder(r)
+	return e.Decode(a)
+}
 
-	DbCreateArticle(Db, article)
-	w.Header().Set("content-type", "application/json")
-	json.NewEncoder(w).Encode(article)
+func (a *Article) AddArticle() error {
+	err := addArticle(Db, *a)
+	if err != nil {
+		fmt.Println("Coudn't add article to db:", err)
+	}
+	return nil
 }
 
 // delete article
