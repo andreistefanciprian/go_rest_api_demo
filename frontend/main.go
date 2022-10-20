@@ -3,11 +3,12 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt" // New import
+	"fmt"
 	"html/template"
-	"io/ioutil" // New import
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v4"
@@ -20,10 +21,9 @@ type Article struct {
 	Content string `json:"content"`
 }
 
-var mySigningKey = []byte("your-256-bit-secret")
-var backendUrl = "http://localhost:8080"
-
-// var mySigningKey = []byte(os.Getenv("JWT_SECRET_KEY"))
+var httpPort = ":8090"
+var mySigningKey = []byte(os.Getenv("JWT_SECRET_KEY"))
+var backendUrl = fmt.Sprintf("http://%s:%s", os.Getenv("REST_API_HOST"), os.Getenv("REST_API_PORT"))
 
 func GenerateJWT() (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -197,15 +197,24 @@ func updateBook(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func handleRequests() {
-	fmt.Println("Starting server on port 5002 ...")
+func main() {
+	// create a new serve mux and register the handlers
 	mux := http.NewServeMux()
 	mux.HandleFunc("/addbook", addBook)
 	mux.HandleFunc("/updatebook", updateBook)
 	mux.HandleFunc("/", home)
-	http.ListenAndServe(":5002", mux)
-}
 
-func main() {
-	handleRequests()
+	// create a new server
+	srv := http.Server{
+		Addr:    httpPort,
+		Handler: mux,
+	}
+
+	// start the server
+	fmt.Println("Starting server on port", httpPort)
+	err := srv.ListenAndServe()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }

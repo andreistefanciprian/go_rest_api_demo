@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/andreistefanciprian/go_web_api_demo/dbmodel"
+	"github.com/andreistefanciprian/go_web_api_demo/backend/dbmodel"
 )
 
 // home page

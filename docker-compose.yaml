@@ -1,34 +1,31 @@
 version: '3.3'
 services:
-  # frontend:
-  #   container_name: frontend
-  #   image: frontend:latest
-  #   build: ./frontend
-  #   ports: 
-  #     - 8090:5000 
-  #   restart: on-failure
-  #   # env_file: ./frontend/.vars
-  #   depends_on:
-  #     my-db:
-  #       condition: service_healthy
-  #   environment:
-  #     - REST_API_HOST=backend
-  #     - REST_API_PORT=8080
-  #     - JWT_SECRET_KEY=your-256-bit-secret
-  #   networks:
-  #     - demo
+  frontend:
+    container_name: frontend
+    image: frontend:latest
+    build: ./frontend
+    ports: 
+      - 8090:8090 
+    restart: on-failure
+    depends_on:
+      my-db:
+        condition: service_healthy
+    environment:
+      - REST_API_HOST=backend
+      - REST_API_PORT=8080
+      - JWT_SECRET_KEY=your-256-bit-secret
+    networks:
+      - demo
 
   backend:
     container_name: backend
     image: backend:latest
-    build: .
+    build: ./backend
     ports: 
       - 8080:8080
     expose:
       - '8080'
     restart: on-failure
-    # env_file:
-    #   - .env
     environment:
       - JWT_SECRET_KEY=your-256-bit-secret
       - MYSQL_PORT=3306
@@ -46,8 +43,6 @@ services:
     container_name: my_db
     image: mysql
     restart: always
-    # env_file:
-    #   - .env
     environment:
       - MYSQL_PORT=3306
       - MYSQL_DATABASE=quickdemo

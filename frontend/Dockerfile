@@ -1,11 +1,24 @@
-FROM python:3.7-alpine
+## Build
+FROM golang:1.17-buster AS build
 
 WORKDIR /app
 
-COPY . /app
+COPY . .
 
-RUN pip3 install -r requirements.txt
+RUN go mod download
 
-EXPOSE 5000
+RUN go build -o /frontend
 
-CMD ["flask", "run", "--host", "0.0.0.0"]
+## Deploy
+FROM gcr.io/distroless/base-debian10
+
+WORKDIR /
+
+COPY --from=build /frontend /frontend
+COPY templates /templates
+
+EXPOSE 8090
+
+USER nonroot:nonroot
+
+ENTRYPOINT ["/frontend"]    
