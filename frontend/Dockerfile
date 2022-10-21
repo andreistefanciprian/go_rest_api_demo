@@ -15,6 +15,7 @@ FROM gcr.io/distroless/base-debian10
 WORKDIR /
 
 COPY --from=build /frontend /frontend
+
 COPY templates /templates
 
 EXPOSE 8090
