@@ -14,12 +14,12 @@ go run main.go
 
 # start frontend container
 docker image build -t frontend:latest .
-docker container run -e JWT_SECRET_KEY=your-256-bit-secret -e REST_API_HOST=backend -e REST_API_PORT=8080 --network go_web_api_demo_demo --name frontend -p 8090:8090 frontend:latest
+docker container run -e JWT_SECRET_KEY=your-256-bit-secret -e REST_API_HOST=backend -e REST_API_PORT=8080 --network go_rest_api_demo_demo --name frontend -p 8090:8090 frontend:latest
 docker container run \
 -e JWT_SECRET_KEY="your-256-bit-secret" \
 -e REST_API_HOST="backend" \
 -e REST_API_PORT="8080" \
---network go_web_api_demo_demo \
+--network go_rest_api_demo_demo \
 --name frontend \
 -p 8090:8090 frontend:latest
 ```

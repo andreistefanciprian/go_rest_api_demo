@@ -7,7 +7,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/andreistefanciprian/go_web_api_demo/backend/dbmodel"
+	"github.com/andreistefanciprian/go_rest_api_demo/backend/dbmodel"
 	jwt "github.com/golang-jwt/jwt/v4"
 )
 

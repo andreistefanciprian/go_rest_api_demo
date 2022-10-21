@@ -1,4 +1,4 @@
-module github.com/andreistefanciprian/go_web_api_demo/frontend
+module github.com/andreistefanciprian/go_rest_api_demo/frontend
 
 go 1.19
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/andreistefanciprian/go_web_api_demo/backend/dbmodel"
-	"github.com/andreistefanciprian/go_web_api_demo/backend/webserver"
+	"github.com/andreistefanciprian/go_rest_api_demo/backend/dbmodel"
+	"github.com/andreistefanciprian/go_rest_api_demo/backend/webserver"
 )
 
 func main() {
