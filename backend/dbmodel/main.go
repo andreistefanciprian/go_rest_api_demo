@@ -65,25 +65,33 @@ func (a *Articles) JSONViewArticles(w io.Writer) error {
 }
 
 // delete all articles
-func DbDeleteArticles(Db *gorm.DB) {
-	var allArticles []Article
-	resultFind := Db.Find(&allArticles)
-	dbInfoLog.Printf("Retrieved %v records from db.", resultFind.RowsAffected)
-	result := Db.Unscoped().Delete(&allArticles) // hard delete
-	dbInfoLog.Printf("Deleted %v records from db.", result.RowsAffected)
-}
-
-func DeleteArticles(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("\nEndpoint Hit: delete all articles")
-	if r.Method != "POST" {
-		w.Header().Set("Allow", "POST")
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
+func (a *Articles) deleteArticles(Db *gorm.DB) error {
+	err := a.getArticles(Db)
+	if err != nil {
+		dbErrorLog.Println("Error retrieving articles from database.")
+		return err
 	}
-	DbDeleteArticles(Db)
-	dbInfoLog.Println("Deleted all articles from database.")
+	result := Db.Unscoped().Delete(&a)
+	if result.Error != nil {
+		dbErrorLog.Println("Error deleting articles from database.")
+		return err
+	} else {
+		dbInfoLog.Printf("Deleted %v records from db.", result.RowsAffected)
+		return nil
+	}
 }
 
+func (a *Articles) DeleteArticles() error {
+	err := a.deleteArticles(Db)
+	if err != nil {
+		dbErrorLog.Println(err.Error())
+		return errors.New("aaaa")
+	} else {
+		return nil
+	}
+}
+
+// create article
 func addArticle(Db *gorm.DB, article Article) error {
 	result := Db.Create(&article)
 	if result.Error != nil {

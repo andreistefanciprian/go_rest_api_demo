@@ -129,6 +129,24 @@ func ViewArticle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func DeleteArticles(w http.ResponseWriter, r *http.Request) {
+	InfoLog.Println("Endpoint Hit: /articles/delete_all")
+	if r.Method != "POST" {
+		w.Header().Set("Allow", "POST")
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var articles dbmodel.Articles
+	err := articles.DeleteArticles()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+	} else {
+		msg := fmt.Sprintf("Deleted %d articles.", len(articles))
+		w.Write([]byte(msg))
+	}
+
+}
+
 // start server
 func StartServer() {
 
@@ -140,7 +158,7 @@ func StartServer() {
 	mux.Handle("/article/delete", dbmodel.JwtAuthentication(DeleteArticle))
 	mux.Handle("/article/view", dbmodel.JwtAuthentication(ViewArticle))
 	mux.Handle("/article/update", dbmodel.JwtAuthentication(UpdateArticle))
-	mux.Handle("/articles/delete_all", dbmodel.JwtAuthentication(dbmodel.DeleteArticles))
+	mux.Handle("/articles/delete_all", dbmodel.JwtAuthentication(DeleteArticles))
 
 	// create a new server
 	var httpPort = ":8080"
