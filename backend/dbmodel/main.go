@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -179,7 +178,7 @@ func ViewArticle(w http.ResponseWriter, r *http.Request) {
 }
 
 // update article
-func dbUpdateArticle(Db *gorm.DB, article Article, id int) error {
+func updateArticle(Db *gorm.DB, article Article, id int) error {
 	result := Db.Model(&article).Where("id = ?", id).Updates(article)
 	msg := fmt.Sprintf("Updated %v records from db.", result.RowsAffected)
 	if result.RowsAffected == 0 {
@@ -191,31 +190,12 @@ func dbUpdateArticle(Db *gorm.DB, article Article, id int) error {
 	}
 }
 
-func UpdateArticle(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("\nEndpoint Hit: update article")
-	if r.Method != "POST" {
-		w.Header().Set("Allow", "POST")
-		http.Error(w, "Method Not Allowed", 405)
-		return
+func (a *Article) UpdateArticle(id int) error {
+	err := updateArticle(Db, *a, id)
+	if err != nil {
+		fmt.Println("Coudn't update article:", err)
 	}
-	id, err := strconv.Atoi(r.URL.Query().Get("id"))
-	if err != nil || id < 1 {
-		http.NotFound(w, r)
-		return
-	}
-	// get the body of our POST request
-	// unmarshal this into a new Article struct
-	// append this to our Articles array.
-	reqBody, _ := ioutil.ReadAll(r.Body)
-	var article Article
-	json.Unmarshal(reqBody, &article)
-
-	result := dbUpdateArticle(Db, article, id)
-	if result != nil {
-		fmt.Fprintf(w, "%s\nCouldn't find article with ID %d", result, id)
-	} else {
-		fmt.Fprintf(w, "Updated article with ID %d", id)
-	}
+	return nil
 }
 
 // middleware for parsing HTTP Token Header from incoming requests
