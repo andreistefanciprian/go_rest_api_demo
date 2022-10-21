@@ -1,17 +1,20 @@
 package webserver
 
 import (
-	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/andreistefanciprian/go_web_api_demo/backend/dbmodel"
 )
 
+var infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+var errorLog = log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+
 // home page
 func homePage(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Endpoint Hit: Home Page\n")
+	infoLog.Println("Endpoint Hit: /")
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
@@ -20,7 +23,7 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func ViewArticles(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("\nEndpoint Hit: articles")
+	infoLog.Println("Endpoint Hit: /articles")
 	var a dbmodel.Articles
 	w.Header().Set("content-type", "application/json")
 	err := a.JSONViewArticles(w)
@@ -30,7 +33,7 @@ func ViewArticles(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateArticle(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("\nEndpoint Hit: create")
+	infoLog.Println("Endpoint Hit: /article/create")
 	if r.Method != "POST" {
 		w.Header().Set("Allow", "POST")
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -47,7 +50,7 @@ func CreateArticle(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateArticle(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("\nEndpoint Hit: update article")
+	infoLog.Println("Endpoint Hit: /article/update")
 	if r.Method != "POST" {
 		w.Header().Set("Allow", "POST")
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -65,19 +68,34 @@ func UpdateArticle(w http.ResponseWriter, r *http.Request) {
 
 	err = article.UpdateArticle(id)
 	if err != nil {
-		http.Error(w, "Coudn't add article to db.", http.StatusInternalServerError)
+		http.Error(w, "Coudn't add article to database.", http.StatusInternalServerError)
 	}
 }
 
 // start server
 func StartServer() {
-	log.Print("Listening on port 8080 ...")
-	http.Handle("/", dbmodel.JwtAuthentication(homePage))
-	http.Handle("/articles", dbmodel.JwtAuthentication(ViewArticles))
-	http.Handle("/article/create", dbmodel.JwtAuthentication(CreateArticle))
-	http.Handle("/article/delete", dbmodel.JwtAuthentication(dbmodel.DeleteArticle))
-	http.Handle("/article/view", dbmodel.JwtAuthentication(dbmodel.ViewArticle))
-	http.Handle("/article/update", dbmodel.JwtAuthentication(UpdateArticle))
-	http.Handle("/articles/delete_all", dbmodel.JwtAuthentication(dbmodel.DeleteArticles))
-	log.Fatal(http.ListenAndServe(":8080", nil))
+
+	// create a new serve mux and register the handlers
+	mux := http.NewServeMux()
+	mux.Handle("/", dbmodel.JwtAuthentication(homePage))
+	mux.Handle("/articles", dbmodel.JwtAuthentication(ViewArticles))
+	mux.Handle("/article/create", dbmodel.JwtAuthentication(CreateArticle))
+	mux.Handle("/article/delete", dbmodel.JwtAuthentication(dbmodel.DeleteArticle))
+	mux.Handle("/article/view", dbmodel.JwtAuthentication(dbmodel.ViewArticle))
+	mux.Handle("/article/update", dbmodel.JwtAuthentication(UpdateArticle))
+	mux.Handle("/articles/delete_all", dbmodel.JwtAuthentication(dbmodel.DeleteArticles))
+
+	// create a new server
+	var httpPort = ":8080"
+	srv := http.Server{
+		Addr:    httpPort,
+		Handler: mux,
+	}
+
+	// start the server
+	infoLog.Println("Listening on port", httpPort)
+	err := srv.ListenAndServe()
+	if err != nil {
+		errorLog.Fatal(err)
+	}
 }
