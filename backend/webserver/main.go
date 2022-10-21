@@ -104,6 +104,31 @@ func DeleteArticle(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func ViewArticle(w http.ResponseWriter, r *http.Request) {
+	InfoLog.Println("Endpoint Hit: /article/view")
+	if r.Method != "GET" {
+		w.Header().Set("Allow", "GET")
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	rawId := r.URL.Query().Get("id")
+	id, err := strconv.Atoi(rawId)
+	if err != nil || id < 1 {
+		msg := fmt.Sprintf("Id '%s' is not  a valid id number!", rawId)
+		ErrorLog.Println(msg)
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+	article := &dbmodel.Article{}
+	err = article.GetArticle(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+	} else {
+		w.Header().Set("content-type", "application/json")
+		article.ToJSON(w)
+	}
+}
+
 // start server
 func StartServer() {
 
@@ -113,7 +138,7 @@ func StartServer() {
 	mux.Handle("/articles", dbmodel.JwtAuthentication(ViewArticles))
 	mux.Handle("/article/create", dbmodel.JwtAuthentication(CreateArticle))
 	mux.Handle("/article/delete", dbmodel.JwtAuthentication(DeleteArticle))
-	mux.Handle("/article/view", dbmodel.JwtAuthentication(dbmodel.ViewArticle))
+	mux.Handle("/article/view", dbmodel.JwtAuthentication(ViewArticle))
 	mux.Handle("/article/update", dbmodel.JwtAuthentication(UpdateArticle))
 	mux.Handle("/articles/delete_all", dbmodel.JwtAuthentication(dbmodel.DeleteArticles))
 

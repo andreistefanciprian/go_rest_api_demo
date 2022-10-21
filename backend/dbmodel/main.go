@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 
 	jwt "github.com/golang-jwt/jwt/v4"
 	"gorm.io/driver/mysql"
@@ -132,42 +131,33 @@ func DeleteArticle(id int) error {
 }
 
 // view article
-func DbViewArticle(Db *gorm.DB, id int) (Article, error) {
-	var article Article
-	result := Db.First(&article, id)
+func (a *Article) getArticle(Db *gorm.DB, id int) error {
+	result := Db.First(&a, id)
 	msg := fmt.Sprintf("Retrieved %v records from db.", result.RowsAffected)
 	if result.RowsAffected == 0 {
 		dbErrorLog.Println(msg)
-		return Article{}, errors.New(msg)
+		return errors.New(msg)
 	} else {
 		dbInfoLog.Println(msg)
-		return article, nil
+		return nil
 	}
 }
 
-func ViewArticle(w http.ResponseWriter, r *http.Request) {
-	dbInfoLog.Println("Endpoint Hit: /article/view")
-	if r.Method != "GET" {
-		w.Header().Set("Allow", "GET")
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	id, err := strconv.Atoi(r.URL.Query().Get("id"))
-	if err != nil || id < 1 {
-		http.NotFound(w, r)
-		return
-	}
-
-	article, err := DbViewArticle(Db, id)
+func (a *Article) GetArticle(id int) error {
+	err := a.getArticle(Db, id)
 	if err != nil {
-		// fmt.Fprintf(w, "%s\nCouldn't find article with ID %d", err, id)
-		dbErrorLog.Printf("Couldn't find article with ID %d\n%s", id, err)
-	} else {
-		w.Header().Set("content-type", "application/json")
-		dbInfoLog.Printf("Retrieved article '%s' with id %d.", article.Title, id)
-		json.NewEncoder(w).Encode(article)
+		msg := fmt.Sprintf("Coudn't find article with id %d", id)
+		dbErrorLog.Println(msg)
+		return errors.New(msg)
 	}
+	dbInfoLog.Printf("Retrieved article '%s' with id %d.", a.Title, id)
+	return nil
+}
+
+func (a *Article) ToJSON(w io.Writer) error {
+	e := json.NewEncoder(w)
+	e.Encode(a)
+	return nil
 }
 
 // update article
