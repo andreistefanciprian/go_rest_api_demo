@@ -1,6 +1,7 @@
 package webserver
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -56,9 +57,12 @@ func UpdateArticle(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	rawId := r.URL.Query().Get("id")
+	id, err := strconv.Atoi(rawId)
 	if err != nil || id < 1 {
-		http.Error(w, "Please provide a valid id number.", http.StatusBadRequest)
+		msg := fmt.Sprintf("Id '%s' is not  a valid id number!", rawId)
+		ErrorLog.Println(msg)
+		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
 
@@ -68,8 +72,36 @@ func UpdateArticle(w http.ResponseWriter, r *http.Request) {
 
 	err = article.UpdateArticle(id)
 	if err != nil {
-		http.Error(w, "Coudn't update article.", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Article was updated successfully."))
 	}
+}
+
+func DeleteArticle(w http.ResponseWriter, r *http.Request) {
+	InfoLog.Println("Endpoint Hit: /article/delete")
+	if r.Method != "POST" {
+		w.Header().Set("Allow", "POST")
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	rawId := r.URL.Query().Get("id")
+	id, err := strconv.Atoi(rawId)
+	if err != nil || id < 1 {
+		msg := fmt.Sprintf("Id '%s' is not  a valid id number!", rawId)
+		ErrorLog.Println(msg)
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
+	err = dbmodel.DeleteArticle(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+	} else {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Article was deleted successfully."))
+	}
+
 }
 
 // start server
@@ -80,7 +112,7 @@ func StartServer() {
 	mux.Handle("/", dbmodel.JwtAuthentication(homePage))
 	mux.Handle("/articles", dbmodel.JwtAuthentication(ViewArticles))
 	mux.Handle("/article/create", dbmodel.JwtAuthentication(CreateArticle))
-	mux.Handle("/article/delete", dbmodel.JwtAuthentication(dbmodel.DeleteArticle))
+	mux.Handle("/article/delete", dbmodel.JwtAuthentication(DeleteArticle))
 	mux.Handle("/article/view", dbmodel.JwtAuthentication(dbmodel.ViewArticle))
 	mux.Handle("/article/update", dbmodel.JwtAuthentication(UpdateArticle))
 	mux.Handle("/articles/delete_all", dbmodel.JwtAuthentication(dbmodel.DeleteArticles))

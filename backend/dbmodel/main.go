@@ -108,7 +108,7 @@ func (a *Article) AddArticle() error {
 }
 
 // delete article
-func DbDeleteArticle(Db *gorm.DB, id int) error {
+func deleteArticle(Db *gorm.DB, id int) error {
 	var article Article
 	result := Db.Unscoped().Delete(&article, id) // hard delete
 	msg := fmt.Sprintf("Deleted %v record from db.", result.RowsAffected)
@@ -121,26 +121,14 @@ func DbDeleteArticle(Db *gorm.DB, id int) error {
 	}
 }
 
-func DeleteArticle(w http.ResponseWriter, r *http.Request) {
-	dbInfoLog.Println("Endpoint Hit: /article/delete")
-	if r.Method != "POST" {
-		w.Header().Set("Allow", "POST")
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
+func DeleteArticle(id int) error {
+	err := deleteArticle(Db, id)
+	if err != nil {
+		dbErrorLog.Println("Couldn't find article with ID", id)
+		return err
 	}
-	id, err := strconv.Atoi(r.URL.Query().Get("id"))
-	if err != nil || id < 1 {
-		http.NotFound(w, r)
-		return
-	}
-	result := DbDeleteArticle(Db, id)
-	if result == nil {
-		dbInfoLog.Println("Deleted article with ID", id)
-		// return
-	} else {
-		// fmt.Fprintf(w, "%s\nCouldn't find article with ID %d", result, id)
-		dbErrorLog.Printf("Couldn't find article with ID %d", id)
-	}
+	dbInfoLog.Println("Deleted article with ID", id)
+	return nil
 }
 
 // view article
