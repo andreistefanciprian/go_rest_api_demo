@@ -8,8 +8,10 @@ import (
 	"strconv"
 
 	"github.com/andreistefanciprian/go_web_api_demo/backend/dbmodel"
+	jwt "github.com/golang-jwt/jwt/v4"
 )
 
+var mySigningKey = []byte(os.Getenv("JWT_SECRET_KEY"))
 var InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 var ErrorLog = log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
@@ -147,18 +149,55 @@ func DeleteArticles(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// middleware for parsing HTTP Token Header from incoming requests
+func JwtAuthentication(endpoint http.HandlerFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		InfoLog.Println("***** Executing JWT middleware *****")
+		// verify if Token header exists
+		headers := r.Header
+		_, exists := headers["Token"]
+		if exists {
+			tokenString := r.Header.Get("Token")
+			// validate token
+			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+				}
+				return mySigningKey, nil
+			})
+			if err != nil {
+				ErrorLog.Println(err)
+			}
+			// if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			// 	fmt.Println(claims)
+			if token.Valid {
+				InfoLog.Println("JWT Auth is successful!")
+				endpoint.ServeHTTP(w, r)
+			} else {
+				ErrorLog.Println("JWT Auth Token is NOT valid!")
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte("Not Authorised! JWT Auth Token is NOT valid!"))
+			}
+		} else {
+			ErrorLog.Println("JWT Auth Token HTTP Header is NOT Present!")
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Not Authorised! JWT Auth Token HTTP Header is NOT Present!"))
+		}
+	})
+}
+
 // start server
 func StartServer() {
 
 	// create a new serve mux and register the handlers
 	mux := http.NewServeMux()
-	mux.Handle("/", dbmodel.JwtAuthentication(homePage))
-	mux.Handle("/articles", dbmodel.JwtAuthentication(ViewArticles))
-	mux.Handle("/article/create", dbmodel.JwtAuthentication(CreateArticle))
-	mux.Handle("/article/delete", dbmodel.JwtAuthentication(DeleteArticle))
-	mux.Handle("/article/view", dbmodel.JwtAuthentication(ViewArticle))
-	mux.Handle("/article/update", dbmodel.JwtAuthentication(UpdateArticle))
-	mux.Handle("/articles/delete_all", dbmodel.JwtAuthentication(DeleteArticles))
+	mux.Handle("/", JwtAuthentication(homePage))
+	mux.Handle("/articles", JwtAuthentication(ViewArticles))
+	mux.Handle("/article/create", JwtAuthentication(CreateArticle))
+	mux.Handle("/article/delete", JwtAuthentication(DeleteArticle))
+	mux.Handle("/article/view", JwtAuthentication(ViewArticle))
+	mux.Handle("/article/update", JwtAuthentication(UpdateArticle))
+	mux.Handle("/articles/delete_all", JwtAuthentication(DeleteArticles))
 
 	// create a new server
 	var httpPort = ":8080"

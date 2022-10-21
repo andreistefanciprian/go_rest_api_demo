@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"os"
 
-	jwt "github.com/golang-jwt/jwt/v4"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -19,7 +17,6 @@ var dbErrorLog = log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfil
 var DbConnectionString string
 var Db *gorm.DB
 var err error
-var mySigningKey = []byte(os.Getenv("JWT_SECRET_KEY"))
 
 // Article struct holds the data table in the db
 type Article struct {
@@ -189,41 +186,4 @@ func (a *Article) UpdateArticle(id int) error {
 	}
 	dbInfoLog.Printf("Updated article with id %d. New book title: '%s'", id, a.Title)
 	return nil
-}
-
-// middleware for parsing HTTP Token Header from incoming requests
-func JwtAuthentication(endpoint http.HandlerFunc) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		dbInfoLog.Println("Executing JWT middleware")
-		// verify if Token header exists
-		headers := r.Header
-		_, exists := headers["Token"]
-		if exists {
-			tokenString := r.Header.Get("Token")
-			// validate token
-			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-				}
-				return mySigningKey, nil
-			})
-			if err != nil {
-				dbErrorLog.Println(err)
-			}
-			// if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			// 	fmt.Println(claims)
-			if token.Valid {
-				dbInfoLog.Println("JWT Auth is successful!")
-				endpoint.ServeHTTP(w, r)
-			} else {
-				dbErrorLog.Println("JWT Auth Token is NOT valid!")
-				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte("Not Authorised!\nJWT Auth Token is NOT valid!"))
-			}
-		} else {
-			dbErrorLog.Println("JWT Auth Token HTTP Header is NOT Present!")
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("Not Authorised!\nJWT Auth Token HTTP Header is NOT Present!"))
-		}
-	})
 }
