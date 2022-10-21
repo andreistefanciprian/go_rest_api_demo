@@ -16,8 +16,6 @@ WORKDIR /
 
 COPY --from=build /web-api /web-api
 
-COPY .env ./
-
 EXPOSE 8080
 
 USER nonroot:nonroot
