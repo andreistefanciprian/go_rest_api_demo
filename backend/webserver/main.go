@@ -9,12 +9,12 @@ import (
 	"github.com/andreistefanciprian/go_web_api_demo/backend/dbmodel"
 )
 
-var infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-var errorLog = log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+var InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+var ErrorLog = log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
 // home page
 func homePage(w http.ResponseWriter, r *http.Request) {
-	infoLog.Println("Endpoint Hit: /")
+	InfoLog.Println("Endpoint Hit: /")
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
@@ -23,7 +23,7 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func ViewArticles(w http.ResponseWriter, r *http.Request) {
-	infoLog.Println("Endpoint Hit: /articles")
+	InfoLog.Println("Endpoint Hit: /articles")
 	var a dbmodel.Articles
 	w.Header().Set("content-type", "application/json")
 	err := a.JSONViewArticles(w)
@@ -33,7 +33,7 @@ func ViewArticles(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateArticle(w http.ResponseWriter, r *http.Request) {
-	infoLog.Println("Endpoint Hit: /article/create")
+	InfoLog.Println("Endpoint Hit: /article/create")
 	if r.Method != "POST" {
 		w.Header().Set("Allow", "POST")
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -50,7 +50,7 @@ func CreateArticle(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateArticle(w http.ResponseWriter, r *http.Request) {
-	infoLog.Println("Endpoint Hit: /article/update")
+	InfoLog.Println("Endpoint Hit: /article/update")
 	if r.Method != "POST" {
 		w.Header().Set("Allow", "POST")
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -58,7 +58,7 @@ func UpdateArticle(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil || id < 1 {
-		http.NotFound(w, r)
+		http.Error(w, "Please provide a valid id number.", http.StatusBadRequest)
 		return
 	}
 
@@ -68,7 +68,7 @@ func UpdateArticle(w http.ResponseWriter, r *http.Request) {
 
 	err = article.UpdateArticle(id)
 	if err != nil {
-		http.Error(w, "Coudn't add article to database.", http.StatusInternalServerError)
+		http.Error(w, "Coudn't update article.", http.StatusInternalServerError)
 	}
 }
 
@@ -93,9 +93,9 @@ func StartServer() {
 	}
 
 	// start the server
-	infoLog.Println("Listening on port", httpPort)
+	InfoLog.Println("Listening on port", httpPort)
 	err := srv.ListenAndServe()
 	if err != nil {
-		errorLog.Fatal(err)
+		ErrorLog.Fatal(err)
 	}
 }

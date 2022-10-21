@@ -15,6 +15,8 @@ import (
 	"gorm.io/gorm"
 )
 
+var dbInfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+var dbErrorLog = log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 var DbConnectionString string
 var Db *gorm.DB
 var err error
@@ -34,8 +36,7 @@ type Articles []*Article
 func Connect(DbConnectionString string) {
 	Db, err = gorm.Open(mysql.Open(DbConnectionString), &gorm.Config{})
 	if err != nil {
-		fmt.Println(err.Error())
-		panic("failed to connect database")
+		dbErrorLog.Fatal("Failed to connect database", err)
 	}
 }
 
@@ -49,14 +50,14 @@ func (a *Articles) getArticles(Db *gorm.DB) error {
 	if result.Error != nil {
 		return result.Error
 	}
-	fmt.Printf("Retrieved %v records from db.", result.RowsAffected)
+	dbInfoLog.Printf("Retrieved %v records from db.", result.RowsAffected)
 	return nil
 }
 
 func (a *Articles) JSONViewArticles(w io.Writer) error {
 	err := a.getArticles(Db)
 	if err != nil {
-		fmt.Println("Error retrieving articles from DB.")
+		dbErrorLog.Println("Error retrieving articles from database.")
 		return err
 	}
 	e := json.NewEncoder(w)
@@ -68,28 +69,28 @@ func (a *Articles) JSONViewArticles(w io.Writer) error {
 func DbDeleteArticles(Db *gorm.DB) {
 	var allArticles []Article
 	resultFind := Db.Find(&allArticles)
-	fmt.Printf("Retrieved %v records from db.", resultFind.RowsAffected)
+	dbInfoLog.Printf("Retrieved %v records from db.", resultFind.RowsAffected)
 	result := Db.Unscoped().Delete(&allArticles) // hard delete
-	msg := fmt.Sprintf("Deleted %v records from db.", result.RowsAffected)
-	fmt.Println(msg)
+	dbInfoLog.Printf("Deleted %v records from db.", result.RowsAffected)
 }
 
 func DeleteArticles(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\nEndpoint Hit: delete all articles")
 	if r.Method != "POST" {
 		w.Header().Set("Allow", "POST")
-		http.Error(w, "Method Not Allowed", 405)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	DbDeleteArticles(Db)
-	fmt.Fprintf(w, "Deleted all articles.")
+	dbInfoLog.Println("Deleted all articles from database.")
 }
 
 func addArticle(Db *gorm.DB, article Article) error {
-	result := Db.Create(&article) // pass pointer of data to Create
+	result := Db.Create(&article)
 	if result.Error != nil {
 		return result.Error
 	}
+	dbInfoLog.Printf("Added '%s' article in database.", article.Title)
 	return nil
 }
 
@@ -101,7 +102,7 @@ func (a *Article) FromJSON(r io.Reader) error {
 func (a *Article) AddArticle() error {
 	err := addArticle(Db, *a)
 	if err != nil {
-		fmt.Println("Coudn't add article to db:", err)
+		dbErrorLog.Println("Coudn't add article to db:", err)
 	}
 	return nil
 }
@@ -110,21 +111,21 @@ func (a *Article) AddArticle() error {
 func DbDeleteArticle(Db *gorm.DB, id int) error {
 	var article Article
 	result := Db.Unscoped().Delete(&article, id) // hard delete
-	msg := fmt.Sprintf("Deleted %v records from db.", result.RowsAffected)
+	msg := fmt.Sprintf("Deleted %v record from db.", result.RowsAffected)
 	if result.RowsAffected == 0 {
-		fmt.Println(msg)
+		dbErrorLog.Println(msg)
 		return errors.New(msg)
 	} else {
-		fmt.Println(msg)
+		dbInfoLog.Println(msg)
 		return nil
 	}
 }
 
 func DeleteArticle(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("\nEndpoint Hit: delete article")
+	dbInfoLog.Println("Endpoint Hit: /article/delete")
 	if r.Method != "POST" {
 		w.Header().Set("Allow", "POST")
-		http.Error(w, "Method Not Allowed", 405)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
@@ -134,9 +135,11 @@ func DeleteArticle(w http.ResponseWriter, r *http.Request) {
 	}
 	result := DbDeleteArticle(Db, id)
 	if result == nil {
-		fmt.Fprintf(w, "Deleted article with ID %d", id)
+		dbInfoLog.Println("Deleted article with ID", id)
+		// return
 	} else {
-		fmt.Fprintf(w, "%s\nCouldn't find article with ID %d", result, id)
+		// fmt.Fprintf(w, "%s\nCouldn't find article with ID %d", result, id)
+		dbErrorLog.Printf("Couldn't find article with ID %d", id)
 	}
 }
 
@@ -146,19 +149,19 @@ func DbViewArticle(Db *gorm.DB, id int) (Article, error) {
 	result := Db.First(&article, id)
 	msg := fmt.Sprintf("Retrieved %v records from db.", result.RowsAffected)
 	if result.RowsAffected == 0 {
-		fmt.Println(msg)
+		dbErrorLog.Println(msg)
 		return Article{}, errors.New(msg)
 	} else {
-		fmt.Println(msg)
+		dbInfoLog.Println(msg)
 		return article, nil
 	}
 }
 
 func ViewArticle(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("\nEndpoint Hit: view article")
+	dbInfoLog.Println("Endpoint Hit: /article/view")
 	if r.Method != "GET" {
 		w.Header().Set("Allow", "GET")
-		http.Error(w, "Method Not Allowed", 405)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -170,9 +173,11 @@ func ViewArticle(w http.ResponseWriter, r *http.Request) {
 
 	article, err := DbViewArticle(Db, id)
 	if err != nil {
-		fmt.Fprintf(w, "%s\nCouldn't find article with ID %d", err, id)
+		// fmt.Fprintf(w, "%s\nCouldn't find article with ID %d", err, id)
+		dbErrorLog.Printf("Couldn't find article with ID %d\n%s", id, err)
 	} else {
 		w.Header().Set("content-type", "application/json")
+		dbInfoLog.Printf("Retrieved article '%s' with id %d.", article.Title, id)
 		json.NewEncoder(w).Encode(article)
 	}
 }
@@ -180,12 +185,12 @@ func ViewArticle(w http.ResponseWriter, r *http.Request) {
 // update article
 func updateArticle(Db *gorm.DB, article Article, id int) error {
 	result := Db.Model(&article).Where("id = ?", id).Updates(article)
-	msg := fmt.Sprintf("Updated %v records from db.", result.RowsAffected)
+	msg := fmt.Sprintf("Updated %v record/s in db.", result.RowsAffected)
 	if result.RowsAffected == 0 {
-		fmt.Println(msg)
-		return errors.New(msg)
+		// dbErrorLog.Println(msg)
+		return errors.New("an article with this id doesn't exist")
 	} else {
-		fmt.Println(msg)
+		dbInfoLog.Println(msg)
 		return nil
 	}
 }
@@ -193,15 +198,17 @@ func updateArticle(Db *gorm.DB, article Article, id int) error {
 func (a *Article) UpdateArticle(id int) error {
 	err := updateArticle(Db, *a, id)
 	if err != nil {
-		fmt.Println("Coudn't update article:", err)
+		dbErrorLog.Printf("Coudn't update article with id %d\n%s", id, err)
+		return err
 	}
+	dbInfoLog.Printf("Updated article with id %d. New book title: '%s'", id, a.Title)
 	return nil
 }
 
 // middleware for parsing HTTP Token Header from incoming requests
 func JwtAuthentication(endpoint http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Print("Executing middleware")
+		dbInfoLog.Println("Executing JWT middleware")
 		// verify if Token header exists
 		headers := r.Header
 		_, exists := headers["Token"]
@@ -215,20 +222,20 @@ func JwtAuthentication(endpoint http.HandlerFunc) http.Handler {
 				return mySigningKey, nil
 			})
 			if err != nil {
-				fmt.Println(err)
+				dbErrorLog.Println(err)
 			}
 			// if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			// 	fmt.Println(claims)
 			if token.Valid {
-				log.Print("JWT Auth is successful!")
+				dbInfoLog.Println("JWT Auth is successful!")
 				endpoint.ServeHTTP(w, r)
 			} else {
-				log.Print("JWT Auth Token is NOT valid!")
+				dbErrorLog.Println("JWT Auth Token is NOT valid!")
 				w.WriteHeader(http.StatusUnauthorized)
 				w.Write([]byte("Not Authorised!\nJWT Auth Token is NOT valid!"))
 			}
 		} else {
-			log.Print("JWT Auth Token HTTP Header is NOT Present!")
+			dbErrorLog.Println("JWT Auth Token HTTP Header is NOT Present!")
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Not Authorised!\nJWT Auth Token HTTP Header is NOT Present!"))
 		}
