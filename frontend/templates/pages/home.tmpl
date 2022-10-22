@@ -63,7 +63,7 @@
 
                     <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-                        <input class="btn btn-outline-danger btn-sm" type="submit" name="update" value="Update">
+                        <input class="btn btn-outline-primary btn-sm" type="submit" name="update" value="Update">
                     </div>
 
                     </form>
@@ -71,7 +71,7 @@
                 </div>
                 </div>
             </div>
-
+  
             <!-- Modal Delete Article-->
             <div class="modal fade" id="deleteArticle{{.Id}}" tabindex="-1" aria-labelledby="deleteArticleLabel" aria-hidden="true">
                 <div class="modal-dialog">
@@ -82,10 +82,11 @@
                     <div class="modal-body">
                     Are you sure you want to delete article {{.Id}}: <br>"{{.Title}}"
                     </div>
-
+                    
                     <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-                    <form action="#" method="POST">
+                    <form action="/" method="POST">
+                        <input type="hidden" class="form-control" placeholder="" aria-label="Id" aria-describedby="basic-addon1" name="id" value="{{.Id}}">
                         <input class="btn btn-outline-danger btn-sm" type="submit" name="delete" value="Delete">
                     </form>
                     
@@ -95,6 +96,7 @@
             </div>
 
         {{end}}
+
     </tbody>
     </table>
 </div>
