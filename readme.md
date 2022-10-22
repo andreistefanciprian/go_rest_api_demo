@@ -1,12 +1,7 @@
 ## Description
 
-Been learning how to create a simple REST API server in Golang that exposes endpoints to allow accessing and manipulating articles in a library stored in mysql db. 
-
-We're using these Golang packages:
-* net/http (standard library for using web servers)
-* gorm (mysql ORM)
-* encoding/json (for transforming data from go struct to json and vice versa)
-* jwt-go (for authenticating requests with JWT tokens)
+Easy REST API backend and Bootstrap frontend written in Golang using standard libraries.
+The backend exposes API endpoints to allow accessing and manipulating articles in a library stored in mysql db. 
 
 ## API Specification (backend)
 
@@ -17,16 +12,25 @@ The operations that our endpoint will allow include:
 * **Update** an article in response to a valid PUT request at /article/update?id={id}.
 * **Delete** an article in response to a valid DELETE request at /article/delete?id={id}.
 
+Used Go libraries:
+* net/http (standard library for using web servers)
+* gorm (mysql ORM)
+* encoding/json (for transforming data from go struct to json and vice versa)
+* jwt-go (for authenticating requests with JWT tokens)
 
 ## Frontend
 
-Working on go frontend.
+I'm using https://getbootstrap.com/ to have a nice user interface without going deep on CSS, JS and HTML.
+
+Used Go libraries:
+* net/http
+* html/template
 
 ## Requirements
 
 * Golang (for writing the application code)
 * Docker (for packaging and running the application)
-* curl (for testing)
+* Any browser
 * https://jwt.io/ for generating jwt tokens
 
 ## Run app with docker-compose
@@ -41,7 +45,7 @@ docker-compose down
 # access frontend at localhost:8090/
 ```
 
-## Test REST API endpoints with curl
+## (Optional) Test REST API endpoints with curl or Postman
 
 ###### Generate jwt token with https://jwt.io/
 Make sure you use the same secret key (JWT_SECRET_KEY) to generate a valid JWT token.
