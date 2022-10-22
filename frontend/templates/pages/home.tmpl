@@ -6,6 +6,50 @@
     <table class="table table-striped">
     <thead>
         <tr>
+            <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#addBook">Add Book</button>
+        </tr>
+
+        <!-- Modal Add Book-->
+        <div class="modal fade" id="addBook" tabindex="-1" aria-labelledby="addBookLabel" aria-hidden="true">
+            <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                <h5 class="modal-title" id="addBookLabel">Add a new Book</h5>
+                </div>
+                <form action="/" method="POST">
+                <div class="modal-body">
+
+                    <div class="input-group mb-3">
+                    <span class="input-group-text" id="basic-addon1">Title</span>
+                    <input type="text" class="form-control" placeholder="" aria-label="Title" aria-describedby="basic-addon1" name="title" value="New Book Title" required>
+                    </div>
+
+                    <div class="input-group mb-3">
+                    <span class="input-group-text" id="basic-addon1">Description</span>
+                    <input type="text" class="form-control" placeholder="" aria-label="Description" aria-describedby="basic-addon1" name="description" value="New Book Description" required>
+                    </div>
+
+                    <div class="input-group">
+                    <span class="input-group-text">Content</span>
+                    <textarea class="form-control" aria-label="Content" placeholder="" name="content" required>New Book Content</textarea>
+                    </div>
+                
+                </div>
+
+                <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                
+                    <input class="btn btn-outline-primary btn-sm" type="submit" name="add" value="Add">
+                
+                </div>
+                </form>
+                
+
+            </div>
+            </div>
+        </div>        
+        <tr>
             <th scope="col">ID</th>
             <th scope="col">Book Title</th>
             <th scope="col">Book Description</th>
@@ -33,12 +77,12 @@
                     <form action="/" method="POST">
 
                     <div class="modal-header">
-                    <h5 class="modal-title" id="updateArticleLabel">Update article #{{.Id}}</h5>
+                    <h5 class="modal-title" id="updateArticleLabel">Update book #{{.Id}}</h5>
                     </div>
 
                     <div class="modal-body">
                     
-                        Are you sure you want to update article {{.Id}}?"
+                        Are you sure you want to update book "{{.Title}}"?
 
                         <div class="input-group mb-3">
                         <input type="hidden" class="form-control" placeholder="" aria-label="Id" aria-describedby="basic-addon1" name="id" value="{{.Id}}">
@@ -77,10 +121,10 @@
                 <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                    <h5 class="modal-title" id="deleteArticleLabel">Delete article #{{.Id}}</h5>
+                    <h5 class="modal-title" id="deleteArticleLabel">Delete book #{{.Id}}</h5>
                     </div>
                     <div class="modal-body">
-                    Are you sure you want to delete article {{.Id}}: <br>"{{.Title}}"
+                    Are you sure you want to delete book "{{.Title}}"?
                     </div>
                     
                     <div class="modal-footer">
