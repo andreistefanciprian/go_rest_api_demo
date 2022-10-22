@@ -74,6 +74,28 @@ func home(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("ERROR Unmarshaling of JSON failed.")
 	}
 
+	if r.Method == http.MethodPost && r.FormValue("update") == "Update" {
+		id := r.PostFormValue("id")
+		newBook := &Article{
+			Title:   r.PostFormValue("title"),
+			Desc:    r.PostFormValue("description"),
+			Content: r.PostFormValue("content"),
+		}
+		marshal_struct, _ := json.Marshal(newBook)
+
+		client := &http.Client{}
+		endpointUrl := fmt.Sprintf("%s/article/update?id=%s", backendUrl, id)
+		req, _ := http.NewRequest("POST", endpointUrl, bytes.NewBuffer(marshal_struct))
+		req.Header.Set("Token", validToken)
+		res, err := client.Do(req)
+		if err != nil {
+			fmt.Fprintf(w, "Error: %s", err.Error())
+		}
+		if res.StatusCode == 200 {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+		}
+	}
+
 	files := []string{
 		"./templates/base.tmpl",
 		"./templates/pages/home.tmpl",
