@@ -1,7 +1,9 @@
 ## Description
 
 Easy REST API backend and Bootstrap frontend written in Golang using standard libraries.
-The backend exposes API endpoints to allow accessing and manipulating articles in a library stored in mysql db. 
+The backend exposes CRUD (Create, Read, Update and Delete) endpoints to allow accessing and manipulating articles in a library stored in mysql db. 
+
+![Alt text](/img.png "Frontend Screenshot")
 
 ## API Specification (backend)
 
