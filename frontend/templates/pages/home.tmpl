@@ -11,6 +11,7 @@
             <th scope="col">Book Description</th>
             <th scope="col">Book Content</th>
             <th scope="col">Delete</th>
+            <th scope="col">Update</th>
         </tr>
     </thead>
     <tbody>
@@ -21,8 +22,56 @@
                 <td>{{.Desc}}</td>
                 <td>{{.Content}}</td>
                 <td><button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteArticle{{.Id}}">Delete</button></td>
+                <td><button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#updateArticle{{.Id}}">Update</button></td>
             </tr>
-        
+
+            <!-- Modal Update Article-->
+            <div class="modal fade" id="updateArticle{{.Id}}" tabindex="-1" aria-labelledby="updateArticleLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                <div class="modal-content">
+
+                    <form action="/" method="POST">
+
+                    <div class="modal-header">
+                    <h5 class="modal-title" id="updateArticleLabel">Update article #{{.Id}}</h5>
+                    </div>
+
+                    <div class="modal-body">
+                    
+                        Are you sure you want to update article {{.Id}}?"
+
+                        <div class="input-group mb-3">
+                        <input type="hidden" class="form-control" placeholder="" aria-label="Id" aria-describedby="basic-addon1" name="id" value="{{.Id}}">
+                        </div>
+
+                        <div class="input-group mb-3">
+                        <span class="input-group-text" id="basic-addon1">Title</span>
+                        <input type="text" class="form-control" placeholder="" aria-label="Title" aria-describedby="basic-addon1" name="title" value="{{.Title}}" required>
+                        </div>
+
+                        <div class="input-group mb-3">
+                        <span class="input-group-text" id="basic-addon1">Description</span>
+                        <input type="text" class="form-control" placeholder="" aria-label="Description" aria-describedby="basic-addon1" name="description" value="{{.Desc}}" required>
+                        </div>
+
+                        <div class="input-group">
+                        <span class="input-group-text">Content</span>
+                        <textarea class="form-control" aria-label="Content" placeholder="" name="content" required>{{.Content}}</textarea>
+                        </div>
+                    
+                    </div>
+
+                    <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                        <input class="btn btn-outline-danger btn-sm" type="submit" name="update" value="Update">
+                    </div>
+
+                    </form>
+
+                </div>
+                </div>
+            </div>
+
             <!-- Modal Delete Article-->
             <div class="modal fade" id="deleteArticle{{.Id}}" tabindex="-1" aria-labelledby="deleteArticleLabel" aria-hidden="true">
                 <div class="modal-dialog">
@@ -37,7 +86,7 @@
                     <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
                     <form action="#" method="POST">
-                        <input class="btn btn-outline-danger btn-sm" type="submit" value="Delete">
+                        <input class="btn btn-outline-danger btn-sm" type="submit" name="delete" value="Delete">
                     </form>
                     
                     </div>
