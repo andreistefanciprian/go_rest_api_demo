@@ -108,3 +108,11 @@ curl -X POST 'http://localhost:8080/article/delete?id=32' \
 curl -X POST 'http://localhost:8080/articles/delete_all' \
 -H "Token:$JWT_TOKEN" 
 ```
+
+## Debug commands
+
+```
+docker network ls
+docker run --network go_rest_api_demo_demo -it --rm --name mysql-client mysql \
+mysql -hmy_db -udemouser -pdemopassword -e "SELECT * from quickdemo.articles;"
+```
