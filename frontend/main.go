@@ -11,6 +11,7 @@ import (
 	"os"
 	"time"
 
+	auth "github.com/andreistefanciprian/go_rest_api_demo/frontend/authentication"
 	jwt "github.com/golang-jwt/jwt/v4"
 )
 
@@ -21,6 +22,8 @@ type Article struct {
 	Content string `json:"content"`
 }
 
+var infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+var errorLog = log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 var httpPort = ":8090"
 var mySigningKey = []byte(os.Getenv("JWT_SECRET_KEY"))
 var backendUrl = fmt.Sprintf("http://%s:%s", os.Getenv("REST_API_HOST"), os.Getenv("REST_API_PORT"))
@@ -39,6 +42,21 @@ func GenerateJWT() (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+func render(w http.ResponseWriter, files []string, data interface{}) {
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		errorLog.Println(err.Error())
+		http.Error(w, "Internal Server Error - pars", http.StatusInternalServerError)
+		return
+	}
+
+	err = ts.ExecuteTemplate(w, "base", data)
+	if err != nil {
+		errorLog.Println(err.Error())
+		http.Error(w, "Internal Server Error - exec templ", http.StatusInternalServerError)
+	}
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
@@ -137,18 +155,8 @@ func home(w http.ResponseWriter, r *http.Request) {
 		"./templates/partials/nav.tmpl",
 		"./templates/partials/footer.tmpl",
 	}
-	ts, err := template.ParseFiles(files...)
-	if err != nil {
-		log.Print(err.Error())
-		http.Error(w, "Internal Server Error", 500)
-		return
-	}
 
-	err = ts.ExecuteTemplate(w, "base", allArticles)
-	if err != nil {
-		log.Print(err.Error())
-		http.Error(w, "Internal Server Error", 500)
-	}
+	render(w, files, allArticles)
 }
 
 func addBook(w http.ResponseWriter, r *http.Request) {
@@ -188,18 +196,8 @@ func addBook(w http.ResponseWriter, r *http.Request) {
 		"./templates/partials/nav.tmpl",
 		"./templates/partials/footer.tmpl",
 	}
-	ts, err := template.ParseFiles(files...)
-	if err != nil {
-		log.Print(err.Error())
-		http.Error(w, "Internal Server Error - pars", 500)
-		return
-	}
 
-	err = ts.ExecuteTemplate(w, "base", nil)
-	if err != nil {
-		log.Print(err.Error())
-		http.Error(w, "Internal Server Error - exec templ", 500)
-	}
+	render(w, files, nil)
 }
 
 func updateBook(w http.ResponseWriter, r *http.Request) {
@@ -240,23 +238,104 @@ func updateBook(w http.ResponseWriter, r *http.Request) {
 		"./templates/partials/nav.tmpl",
 		"./templates/partials/footer.tmpl",
 	}
-	ts, err := template.ParseFiles(files...)
-	if err != nil {
-		log.Print(err.Error())
-		http.Error(w, "Internal Server Error - pars", 500)
+
+	render(w, files, nil)
+}
+
+var dbCon = auth.UserGorm{}
+
+func login(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/login" {
+		http.NotFound(w, r)
 		return
 	}
 
-	err = ts.ExecuteTemplate(w, "base", nil)
-	if err != nil {
-		log.Print(err.Error())
-		http.Error(w, "Internal Server Error - exec templ", 500)
+	if r.Method == http.MethodPost {
+		rawPassword := r.PostFormValue("password")
+		passHash, err := auth.HashPassword(rawPassword)
+		if err != nil {
+			errorLog.Println("Password couldn't be hashed.")
+		}
+		user := &auth.User{
+			Email:          r.PostFormValue("email"),
+			HashedPassword: passHash,
+		}
+
+		marshal_struct, _ := json.Marshal(user)
+		infoLog.Println(string(marshal_struct))
+
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
+
+	files := []string{
+		"./templates/base.tmpl",
+		"./templates/pages/login.tmpl",
+		"./templates/partials/nav.tmpl",
+		"./templates/partials/footer.tmpl",
+	}
+
+	render(w, files, nil)
+}
+
+func register(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/register" {
+		http.NotFound(w, r)
+		return
+	}
+
+	files := []string{
+		"./templates/base.tmpl",
+		"./templates/pages/register.tmpl",
+		"./templates/partials/nav.tmpl",
+		"./templates/partials/footer.tmpl",
+	}
+
+	if r.Method == http.MethodPost {
+		newUser := &auth.User{
+			FirstName: r.PostFormValue("firstname"),
+			LastName:  r.PostFormValue("lastname"),
+			Email:     r.PostFormValue("email"),
+			Password:  r.PostFormValue("password"),
+		}
+		passHash, err := auth.HashPassword(newUser.Password)
+		if err != nil {
+			errorLog.Println("Password couldn't be hashed.")
+		}
+		newUser.HashedPassword = passHash
+		if dbCon.Connect(auth.DbConnectionString) {
+			_, err := dbCon.CreateUser(newUser)
+			if err != nil {
+				newUser.Errors = make(map[string]string)
+				newUser.Errors["Email"] = "Email address is already registered!"
+
+				render(w, files, &newUser)
+				return
+			} else {
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+			}
+		}
+	}
+
+	render(w, files, nil)
 }
 
 func main() {
+	// connect to db + migrate db
+	dbUser := os.Getenv("MYSQL_USER")
+	dbPassword := os.Getenv("MYSQL_PASSWORD")
+	dbHost := os.Getenv("MYSQL_HOST")
+	dbPort := os.Getenv("MYSQL_PORT")
+	dbName := os.Getenv("MYSQL_DATABASE")
+	auth.DbConnectionString = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", dbUser, dbPassword, dbHost, dbPort, dbName)
+	var db = &auth.UserGorm{}
+
+	db.Connect(auth.DbConnectionString)
+	db.InitialMigration()
+
 	// create a new serve mux and register the handlers
 	mux := http.NewServeMux()
+	mux.HandleFunc("/login", login)
+	mux.HandleFunc("/register", register)
 	mux.HandleFunc("/addbook", addBook)
 	mux.HandleFunc("/updatebook", updateBook)
 	mux.HandleFunc("/", home)
@@ -268,10 +347,10 @@ func main() {
 	}
 
 	// start the server
-	fmt.Println("Starting server on port", httpPort)
+	infoLog.Println("Starting server on port", httpPort)
 	err := srv.ListenAndServe()
 	if err != nil {
-		log.Fatal(err)
+		errorLog.Fatal(err)
 	}
 
 }
