@@ -59,37 +59,64 @@ func render(w http.ResponseWriter, files []string, data interface{}) {
 	}
 }
 
+func sendApiRequest(w http.ResponseWriter, r *http.Request, JwtToken string, endpointUrl string, book *Article) {
+	marshal_struct, _ := json.Marshal(book)
+	client := &http.Client{}
+	// endpointUrl := fmt.Sprintf("%s%s", backendUrl, endpooint)
+	req, _ := http.NewRequest("POST", endpointUrl, bytes.NewBuffer(marshal_struct))
+	req.Header.Set("Token", JwtToken)
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Fprintf(w, "Error: %s", err.Error())
+	}
+	if res.StatusCode == 200 {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
 func home(w http.ResponseWriter, r *http.Request) {
+
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
 	}
-
+	// html go templated files
+	files := []string{
+		"./templates/base.tmpl",
+		"./templates/pages/home.tmpl",
+		"./templates/partials/nav.tmpl",
+		"./templates/partials/footer.tmpl",
+	}
+	// generate JWT token
 	validToken, err := GenerateJWT()
 	if err != nil {
 		fmt.Println("Failed to generate token")
 	}
 
-	client := &http.Client{}
-	endpointUrl := fmt.Sprintf("%s/articles", backendUrl)
-	req, _ := http.NewRequest("GET", endpointUrl, nil)
-	req.Header.Set("Token", validToken)
-	res, err := client.Do(req)
-	if err != nil {
-		fmt.Fprintf(w, "Error: %s", err.Error())
-	}
+	if r.Method == http.MethodGet {
+		client := &http.Client{}
+		endpointUrl := fmt.Sprintf("%s/articles", backendUrl)
+		req, _ := http.NewRequest("GET", endpointUrl, nil)
+		req.Header.Set("Token", validToken)
+		res, err := client.Do(req)
+		if err != nil {
+			fmt.Fprintf(w, "Error: %s", err.Error())
+		}
 
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println(err)
-	}
-	var allArticles []Article
+		body, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			fmt.Println(err)
+		}
+		var allArticles []Article
 
-	jsonErr := json.Unmarshal([]byte(string(body)), &allArticles)
+		jsonErr := json.Unmarshal([]byte(string(body)), &allArticles)
 
-	if jsonErr != nil {
-		fmt.Println(err)
-		fmt.Println("ERROR Unmarshaling of JSON failed.")
+		if jsonErr != nil {
+			fmt.Println(err)
+			fmt.Println("ERROR Unmarshaling of JSON failed.")
+		}
+
+		render(w, files, allArticles)
 	}
 
 	if r.Method == http.MethodPost && r.FormValue("add") == "Add" {
@@ -98,65 +125,32 @@ func home(w http.ResponseWriter, r *http.Request) {
 			Desc:    r.PostFormValue("description"),
 			Content: r.PostFormValue("content"),
 		}
-		marshal_struct, _ := json.Marshal(newBook)
-		client := &http.Client{}
+
 		endpointUrl := fmt.Sprintf("%s/article/create", backendUrl)
-		req, _ := http.NewRequest("POST", endpointUrl, bytes.NewBuffer(marshal_struct))
-		req.Header.Set("Token", validToken)
-		res, err := client.Do(req)
-		if err != nil {
-			fmt.Fprintf(w, "Error: %s", err.Error())
-		}
-		if res.StatusCode == 200 {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
-		}
+
+		sendApiRequest(w, r, validToken, endpointUrl, newBook)
 	}
 
 	if r.Method == http.MethodPost && r.FormValue("update") == "Update" {
 		id := r.PostFormValue("id")
+		endpointUrl := fmt.Sprintf("%s/article/update?id=%s", backendUrl, id)
+
 		updatedBook := &Article{
 			Title:   r.PostFormValue("title"),
 			Desc:    r.PostFormValue("description"),
 			Content: r.PostFormValue("content"),
 		}
-		marshal_struct, _ := json.Marshal(updatedBook)
 
-		client := &http.Client{}
-		endpointUrl := fmt.Sprintf("%s/article/update?id=%s", backendUrl, id)
-		req, _ := http.NewRequest("POST", endpointUrl, bytes.NewBuffer(marshal_struct))
-		req.Header.Set("Token", validToken)
-		res, err := client.Do(req)
-		if err != nil {
-			fmt.Fprintf(w, "Error: %s", err.Error())
-		}
-		if res.StatusCode == 200 {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
-		}
+		sendApiRequest(w, r, validToken, endpointUrl, updatedBook)
+
 	}
 
 	if r.Method == http.MethodPost && r.FormValue("delete") == "Delete" {
 		id := r.PostFormValue("id")
-		client := &http.Client{}
 		endpointUrl := fmt.Sprintf("%s/article/delete?id=%s", backendUrl, id)
-		req, _ := http.NewRequest("POST", endpointUrl, nil)
-		req.Header.Set("Token", validToken)
-		res, err := client.Do(req)
-		if err != nil {
-			fmt.Fprintf(w, "Error: %s", err.Error())
-		}
-		if res.StatusCode == 200 {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
-		}
-	}
 
-	files := []string{
-		"./templates/base.tmpl",
-		"./templates/pages/home.tmpl",
-		"./templates/partials/nav.tmpl",
-		"./templates/partials/footer.tmpl",
+		sendApiRequest(w, r, validToken, endpointUrl, nil)
 	}
-
-	render(w, files, allArticles)
 }
 
 func addBook(w http.ResponseWriter, r *http.Request) {
@@ -170,24 +164,16 @@ func addBook(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Println("Failed to generate token")
 		}
+
+		endpointUrl := fmt.Sprintf("%s/article/create", backendUrl)
+
 		newBook := &Article{
 			Title:   r.PostFormValue("title"),
 			Desc:    r.PostFormValue("description"),
 			Content: r.PostFormValue("content"),
 		}
-		marshal_struct, _ := json.Marshal(newBook)
 
-		client := &http.Client{}
-		endpointUrl := fmt.Sprintf("%s/article/create", backendUrl)
-		req, _ := http.NewRequest("POST", endpointUrl, bytes.NewBuffer(marshal_struct))
-		req.Header.Set("Token", validToken)
-		res, err := client.Do(req)
-		if err != nil {
-			fmt.Fprintf(w, "Error: %s", err.Error())
-		}
-		if res.StatusCode == 200 {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
-		}
+		sendApiRequest(w, r, validToken, endpointUrl, newBook)
 	}
 
 	files := []string{
@@ -212,24 +198,15 @@ func updateBook(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("Failed to generate token")
 		}
 		id := r.PostFormValue("id")
+		endpointUrl := fmt.Sprintf("%s/article/update?id=%s", backendUrl, id)
+
 		newBook := &Article{
 			Title:   r.PostFormValue("title"),
 			Desc:    r.PostFormValue("description"),
 			Content: r.PostFormValue("content"),
 		}
-		marshal_struct, _ := json.Marshal(newBook)
 
-		client := &http.Client{}
-		endpointUrl := fmt.Sprintf("%s/article/update?id=%s", backendUrl, id)
-		req, _ := http.NewRequest("POST", endpointUrl, bytes.NewBuffer(marshal_struct))
-		req.Header.Set("Token", validToken)
-		res, err := client.Do(req)
-		if err != nil {
-			fmt.Fprintf(w, "Error: %s", err.Error())
-		}
-		if res.StatusCode == 200 {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
-		}
+		sendApiRequest(w, r, validToken, endpointUrl, newBook)
 	}
 
 	files := []string{
