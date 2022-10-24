@@ -1,0 +1,43 @@
+{{define "title"}}User Registration{{end}}
+
+{{define "main"}}
+
+<br>
+<form method="POST" action="/register" oninput='repeatpassword.setCustomValidity(repeatpassword.value != password.value ? "Passwords do not match." : "")'>
+{{ with .Errors.Email }}
+  <div class="alert alert-warning" role="alert">
+    {{ . }}
+  </div>
+{{ end }}
+
+<div class="form-floating mb-3">
+  <input type="text" class="form-control" id="firstname" name="firstname" placeholder="Dow" value="{{.FirstName}}" required>
+  <label for="firstname">First Name</label>
+</div>
+
+<div class="form-floating mb-3">
+  <input type="text" class="form-control" id="lastname" name="lastname" placeholder="Jones" value="{{.LastName}}" required>
+  <label for="lastname">Last Name</label>
+</div>
+
+<div class="form-floating mb-3">
+  <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com" value="{{.Email}}" required>
+  <label for="email">Email address</label>
+</div>
+
+<div class="form-floating mb-3">
+  <input type="password" class="form-control" id="password" name="password" placeholder="Password" value="{{.Password}}" required>
+  <label for="password">Password</label>
+</div>
+
+<div class="form-floating mb-3">
+  <input type="password" class="form-control" id="repeatpassword" name="repeatpassword" placeholder="Repeat Your Password" value="{{.Password}}" required>
+  <label for="repeatpassword">Repeat Your Password</label>
+</div>
+
+<div class="form-floating mb-3">
+  <button type="submit" class="btn btn-primary" name="register" value="Register">Register</button>
+</div>
+
+</form>
+{{end}}
