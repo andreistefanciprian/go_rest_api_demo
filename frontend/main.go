@@ -13,6 +13,11 @@ import (
 
 	auth "github.com/andreistefanciprian/go_rest_api_demo/frontend/authentication"
 	jwt "github.com/golang-jwt/jwt/v4"
+
+	_ "github.com/honeycombio/honeycomb-opentelemetry-go"
+	"github.com/honeycombio/opentelemetry-go-contrib/launcher"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 type Article struct {
@@ -309,13 +314,33 @@ func main() {
 	db.Connect(auth.DbConnectionString)
 	db.InitialMigration()
 
+	// use honeycomb distro to setup OpenTelemetry SDK
+	otelShutdown, errr := launcher.ConfigureOpenTelemetry()
+	if errr != nil {
+		log.Fatalf("error setting up OTel SDK - %e", errr)
+	}
+	defer otelShutdown()
+
 	// create a new serve mux and register the handlers
 	mux := http.NewServeMux()
-	mux.HandleFunc("/login", login)
-	mux.HandleFunc("/register", register)
+
+	loginHandler := http.HandlerFunc(login)
+	wrappedLoginHandler := otelhttp.NewHandler(loginHandler, "login")
+	mux.Handle("/login", wrappedLoginHandler)
+
+	registerHandler := http.HandlerFunc(register)
+	wrappedRegisterHandler := otelhttp.NewHandler(registerHandler, "register")
+	mux.Handle("/register", wrappedRegisterHandler)
+
+	homeHandler := http.HandlerFunc(home)
+	wrappedHomeHandler := otelhttp.NewHandler(homeHandler, "home")
+	mux.Handle("/", wrappedHomeHandler)
+
+	// mux.HandleFunc("/login", login)
+	// mux.HandleFunc("/register", register)
 	mux.HandleFunc("/addbook", addBook)
 	mux.HandleFunc("/updatebook", updateBook)
-	mux.HandleFunc("/", home)
+	// mux.HandleFunc("/", home)
 
 	// create a new server
 	srv := http.Server{

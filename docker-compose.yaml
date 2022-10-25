@@ -1,5 +1,6 @@
 version: '3.3'
 services:
+
   frontend:
     container_name: frontend
     image: frontend:latest
@@ -19,6 +20,8 @@ services:
       - MYSQL_USER=demouser
       - MYSQL_PASSWORD=demopassword
       - MYSQL_HOST=my_db
+      - OTEL_SERVICE_NAME=frontend_service
+      - HONEYCOMB_API_KEY=YOUR_API_KEY
     networks:
       - demo
 
