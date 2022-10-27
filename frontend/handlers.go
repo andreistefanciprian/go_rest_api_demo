@@ -51,9 +51,11 @@ func (app *application) sendApiRequest(w http.ResponseWriter, r *http.Request, J
 	req.Header.Set("Token", JwtToken)
 	res, err := client.Do(req)
 	if err != nil {
+		app.errorLog.Println("Couldn't reach endpoint", endpointUrl)
 		fmt.Fprintf(w, "Error: %s", err.Error())
 	}
 	if res.StatusCode == 200 {
+		app.infoLog.Println("Successfully reached endpoint", endpointUrl)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }
@@ -172,13 +174,12 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 			app.render(w, files, &user)
 			return
 		} else {
+			// redirect use to home page
 			app.infoLog.Println(user.Email, "Successful Login.")
 			http.Redirect(w, r, "/"+"?login="+registeredUser.FirstName, http.StatusSeeOther)
 		}
 
 		// if password hash matched records, generate JWT Token
-
-		// redirect use to home page
 	}
 
 	app.render(w, files, nil)
