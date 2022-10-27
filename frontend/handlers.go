@@ -143,28 +143,42 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Method == http.MethodPost {
-		rawPassword := r.PostFormValue("password")
-		passHash, err := auth.HashPassword(rawPassword)
-		if err != nil {
-			app.errorLog.Println("Password couldn't be hashed.")
-		}
-		user := &auth.User{
-			Email:          r.PostFormValue("email"),
-			HashedPassword: passHash,
-		}
-
-		marshal_struct, _ := json.Marshal(user)
-		app.infoLog.Println(string(marshal_struct))
-
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-	}
-
 	files := []string{
 		"./templates/base.tmpl",
 		"./templates/pages/login.tmpl",
 		"./templates/partials/nav.tmpl",
 		"./templates/partials/footer.tmpl",
+	}
+
+	if r.Method == http.MethodPost {
+		user := &auth.User{
+			Email:    r.PostFormValue("email"),
+			Password: r.PostFormValue("password"),
+		}
+
+		// verify user exists
+		registeredUser, err := app.users.ByEmail(user.Email)
+		// if user doesn't exist, raise popup warning
+		if err != nil {
+			user.Errors = make(map[string]string)
+			user.Errors["PopUp"] = "Email address is not registered!"
+			app.render(w, files, &user)
+			return
+		}
+		// if user exists check if the password hash matches password in db
+		if !auth.CheckPasswordHash(user.Password, registeredUser.HashedPassword) {
+			user.Errors = make(map[string]string)
+			user.Errors["PopUp"] = "Password doesn't match!"
+			app.render(w, files, &user)
+			return
+		} else {
+			app.infoLog.Println(user.Email, "Successful Login.")
+			http.Redirect(w, r, "/"+"?login="+registeredUser.FirstName, http.StatusSeeOther)
+		}
+
+		// if password hash matched records, generate JWT Token
+
+		// redirect use to home page
 	}
 
 	app.render(w, files, nil)
@@ -198,7 +212,7 @@ func (app *application) register(w http.ResponseWriter, r *http.Request) {
 		_, err = app.users.CreateUser(newUser)
 		if err != nil {
 			newUser.Errors = make(map[string]string)
-			newUser.Errors["Email"] = "Email address is already registered!"
+			newUser.Errors["PopUp"] = "Email address is already registered!"
 
 			app.render(w, files, &newUser)
 			return

@@ -4,7 +4,7 @@
 
 <br>
 <form method="POST" action="/register" oninput='repeatpassword.setCustomValidity(repeatpassword.value != password.value ? "Passwords do not match." : "")'>
-{{ with .Errors.Email }}
+{{ with .Errors.PopUp }}
   <div class="alert alert-warning" role="alert">
     {{ . }}
   </div>
