@@ -44,7 +44,7 @@ func (ug *UserModel) CreateUser(user *User) (*User, error) {
 		errorLog.Printf("Could not add '%s' user in database.", user.FirstName)
 		return nil, result.Error
 	}
-	infoLog.Printf("Added '%s' user in database.", user.FirstName)
+	infoLog.Printf("'%s' successfully registered.", user.FirstName)
 	return user, nil
 }
 
