@@ -1,5 +1,6 @@
 version: '3.3'
 services:
+
   frontend:
     container_name: frontend
     image: frontend:latest
@@ -59,8 +60,8 @@ services:
       - MYSQL_HOST=my_db
     expose:
       - '3306'
-    # ports: 
-    #   - 3306:3306
+    ports: 
+      - 3306:3306
     volumes:
       - my-db:/var/lib/mysql
     networks:
