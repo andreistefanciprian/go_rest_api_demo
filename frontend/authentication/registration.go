@@ -56,7 +56,7 @@ func (ug *UserModel) InitialMigration() {
 // ByEmail looks up user by Email address
 func (ug *UserModel) ByEmail(email string) (*User, error) {
 	var user User
-	result := ug.DB.First(&user, email)
+	result := ug.DB.First(&user, "Email = ?", email)
 	if result.Error != nil {
 		return nil, result.Error
 	}
