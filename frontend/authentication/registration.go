@@ -10,7 +10,6 @@ import (
 
 var infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 var errorLog = log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
-var DbConnectionString string
 
 type User struct {
 	gorm.Model

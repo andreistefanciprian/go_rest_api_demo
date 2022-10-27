@@ -26,10 +26,6 @@ type application struct {
 	users        *auth.UserModel
 }
 
-type UserGorm struct {
-	Db *gorm.DB
-}
-
 // establishes connection to mysql
 func connectDB(dbConnectionString string) (*gorm.DB, error) {
 	var err error
@@ -56,7 +52,6 @@ func main() {
 	dbPort := os.Getenv("MYSQL_PORT")
 	dbName := os.Getenv("MYSQL_DATABASE")
 	dbConnectionString := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", dbUser, dbPassword, dbHost, dbPort, dbName)
-	// var db = &auth.UserGorm{}
 
 	db, err := connectDB(dbConnectionString)
 	if err != nil {
