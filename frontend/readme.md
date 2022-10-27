@@ -15,7 +15,7 @@ export MYSQL_PASSWORD=demopassword
 export MYSQL_HOST=localhost
 
 # start frontend
-go run main.go
+go run .
 
 # start frontend container
 docker image build -t frontend:latest .

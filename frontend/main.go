@@ -7,6 +7,8 @@ import (
 	"os"
 
 	auth "github.com/andreistefanciprian/go_rest_api_demo/frontend/authentication"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 type Article struct {
@@ -21,6 +23,23 @@ type application struct {
 	infoLog      *log.Logger
 	mySigningKey []byte
 	backendUrl   string
+	users        *auth.UserModel
+}
+
+type UserGorm struct {
+	Db *gorm.DB
+}
+
+// establishes connection to mysql
+func connectDB(dbConnectionString string) (*gorm.DB, error) {
+	var err error
+	db, err := gorm.Open(mysql.Open(dbConnectionString), &gorm.Config{})
+	if err != nil {
+		// errorLog.Fatal("Failed to connect database", err)
+		return nil, err
+	}
+	// infoLog.Println("Successfully connected to db.")
+	return db, nil
 }
 
 func main() {
@@ -30,24 +49,29 @@ func main() {
 	mySigningKey := []byte(os.Getenv("JWT_SECRET_KEY"))
 	backendUrl := fmt.Sprintf("http://%s:%s", os.Getenv("REST_API_HOST"), os.Getenv("REST_API_PORT"))
 
-	app := &application{
-		errorLog:     errorLog,
-		infoLog:      infoLog,
-		backendUrl:   backendUrl,
-		mySigningKey: mySigningKey,
-	}
-
 	// connect to db + migrate db
 	dbUser := os.Getenv("MYSQL_USER")
 	dbPassword := os.Getenv("MYSQL_PASSWORD")
 	dbHost := os.Getenv("MYSQL_HOST")
 	dbPort := os.Getenv("MYSQL_PORT")
 	dbName := os.Getenv("MYSQL_DATABASE")
-	auth.DbConnectionString = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", dbUser, dbPassword, dbHost, dbPort, dbName)
-	var db = &auth.UserGorm{}
+	dbConnectionString := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", dbUser, dbPassword, dbHost, dbPort, dbName)
+	// var db = &auth.UserGorm{}
 
-	db.Connect(auth.DbConnectionString)
-	db.InitialMigration()
+	db, err := connectDB(dbConnectionString)
+	if err != nil {
+		errorLog.Fatal(err)
+	}
+
+	app := &application{
+		errorLog:     errorLog,
+		infoLog:      infoLog,
+		backendUrl:   backendUrl,
+		mySigningKey: mySigningKey,
+		users:        &auth.UserModel{DB: db},
+	}
+
+	app.users.InitialMigration()
 
 	// create a new serve mux and register the handlers
 	mux := http.NewServeMux()
@@ -63,7 +87,7 @@ func main() {
 
 	// start the server
 	app.infoLog.Println("Starting server on port", httpPort)
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	if err != nil {
 		app.errorLog.Fatal(err)
 	}

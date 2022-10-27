@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
@@ -25,6 +24,10 @@ type User struct {
 
 type Users []*User
 
+type UserModel struct {
+	DB *gorm.DB
+}
+
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	return string(bytes), err
@@ -35,13 +38,9 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-type UserGorm struct {
-	Db *gorm.DB
-}
-
 // CreateUser adds user in db
-func (ug *UserGorm) CreateUser(user *User) (*User, error) {
-	result := ug.Db.Create(&user)
+func (ug *UserModel) CreateUser(user *User) (*User, error) {
+	result := ug.DB.Create(&user)
 	if result.Error != nil {
 		errorLog.Printf("Could not add '%s' user in database.", user.FirstName)
 		return nil, result.Error
@@ -50,27 +49,15 @@ func (ug *UserGorm) CreateUser(user *User) (*User, error) {
 	return user, nil
 }
 
-// Connect establishes connection to mysql
-func (ug *UserGorm) Connect(DbConnectionString string) bool {
-	var err error
-	ug.Db, err = gorm.Open(mysql.Open(DbConnectionString), &gorm.Config{})
-	if err != nil {
-		errorLog.Fatal("Failed to connect database", err)
-		return false
-	}
-	infoLog.Println("Successfully connected to db.")
-	return true
-}
-
 // InitialMigration creates the table if it doesn't exist
-func (ug *UserGorm) InitialMigration() {
-	ug.Db.AutoMigrate(&User{})
+func (ug *UserModel) InitialMigration() {
+	ug.DB.AutoMigrate(&User{})
 }
 
 // ByEmail looks up user by Email address
-func (ug *UserGorm) ByEmail(email string) (*User, error) {
+func (ug *UserModel) ByEmail(email string) (*User, error) {
 	var user User
-	result := ug.Db.First(&user, email)
+	result := ug.DB.First(&user, email)
 	if result.Error != nil {
 		return nil, result.Error
 	}

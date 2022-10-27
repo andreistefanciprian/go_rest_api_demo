@@ -137,8 +137,6 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-var dbCon = auth.UserGorm{}
-
 func (app *application) login(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/login" {
 		http.NotFound(w, r)
@@ -197,17 +195,15 @@ func (app *application) register(w http.ResponseWriter, r *http.Request) {
 			app.errorLog.Println("Password couldn't be hashed.")
 		}
 		newUser.HashedPassword = passHash
-		if dbCon.Connect(auth.DbConnectionString) {
-			_, err := dbCon.CreateUser(newUser)
-			if err != nil {
-				newUser.Errors = make(map[string]string)
-				newUser.Errors["Email"] = "Email address is already registered!"
+		_, err = app.users.CreateUser(newUser)
+		if err != nil {
+			newUser.Errors = make(map[string]string)
+			newUser.Errors["Email"] = "Email address is already registered!"
 
-				app.render(w, files, &newUser)
-				return
-			} else {
-				http.Redirect(w, r, "/", http.StatusSeeOther)
-			}
+			app.render(w, files, &newUser)
+			return
+		} else {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 		}
 	}
 
