@@ -13,5 +13,5 @@ export MYSQL_PASSWORD=demopassword
 export MYSQL_HOST=localhost
 
 # start backend
-go run main.go
+go run .
 ```

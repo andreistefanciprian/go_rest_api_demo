@@ -8,15 +8,15 @@ import (
 	"log"
 	"os"
 
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 var dbInfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 var dbErrorLog = log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
-var DbConnectionString string
-var Db *gorm.DB
-var err error
+
+type UserModel struct {
+	DB *gorm.DB
+}
 
 // Article struct holds the data table in the db
 type Article struct {
@@ -28,21 +28,13 @@ type Article struct {
 
 type Articles []*Article
 
-// Connect establishes connection to mysql
-func Connect(DbConnectionString string) {
-	Db, err = gorm.Open(mysql.Open(DbConnectionString), &gorm.Config{})
-	if err != nil {
-		dbErrorLog.Fatal("Failed to connect database", err)
-	}
-}
-
 // InitialMigration creates the table if it doesn't exist
-func InitialMigration(Db *gorm.DB) {
-	Db.AutoMigrate(&Article{})
+func (ug *UserModel) InitialMigration() {
+	ug.DB.AutoMigrate(&Article{})
 }
 
-func (a *Articles) getArticles(Db *gorm.DB) error {
-	result := Db.Find(&a)
+func (ug *UserModel) getArticles(a *Articles) error {
+	result := ug.DB.Find(&a)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -50,8 +42,8 @@ func (a *Articles) getArticles(Db *gorm.DB) error {
 	return nil
 }
 
-func (a *Articles) JSONViewArticles(w io.Writer) error {
-	err := a.getArticles(Db)
+func (ug *UserModel) JSONViewArticles(w io.Writer, a *Articles) error {
+	err := ug.getArticles(a)
 	if err != nil {
 		dbErrorLog.Println("Error retrieving articles from database.")
 		return err
@@ -62,39 +54,37 @@ func (a *Articles) JSONViewArticles(w io.Writer) error {
 }
 
 // delete all articles
-func (a *Articles) deleteArticles(Db *gorm.DB) error {
-	err := a.getArticles(Db)
+func (ug *UserModel) deleteArticles(a *Articles) error {
+	err := ug.getArticles(a)
 	if err != nil {
-		dbErrorLog.Println("Error retrieving articles from database.")
+		dbErrorLog.Println("Could not retrieve articles from database.")
 		return err
 	}
-	result := Db.Unscoped().Delete(&a)
+	result := ug.DB.Unscoped().Delete(&a)
 	if result.Error != nil {
-		dbErrorLog.Println("Error deleting articles from database.")
-		return err
+		return result.Error
 	} else {
 		dbInfoLog.Printf("Deleted %v records from db.", result.RowsAffected)
 		return nil
 	}
 }
 
-func (a *Articles) DeleteArticles() error {
-	err := a.deleteArticles(Db)
+func (ug *UserModel) DeleteArticles(a *Articles) error {
+	err := ug.deleteArticles(a)
 	if err != nil {
-		dbErrorLog.Println(err.Error())
-		return errors.New("aaaa")
+		return errors.New("could not delete articles")
 	} else {
 		return nil
 	}
 }
 
 // create article
-func addArticle(Db *gorm.DB, article Article) error {
-	result := Db.Create(&article)
+func (ug *UserModel) addArticle(a *Article) error {
+	result := ug.DB.Create(&a)
 	if result.Error != nil {
-		return result.Error
+		return errors.New("could not create article")
 	}
-	dbInfoLog.Printf("Added '%s' article in database.", article.Title)
+	dbInfoLog.Printf("Added '%s' article in database.", a.Title)
 	return nil
 }
 
@@ -103,18 +93,18 @@ func (a *Article) FromJSON(r io.Reader) error {
 	return e.Decode(a)
 }
 
-func (a *Article) AddArticle() error {
-	err := addArticle(Db, *a)
+func (ug *UserModel) AddArticle(a *Article) error {
+	err := ug.addArticle(a)
 	if err != nil {
-		dbErrorLog.Println("Coudn't add article to db:", err)
+		return err
 	}
 	return nil
 }
 
 // delete article
-func deleteArticle(Db *gorm.DB, id int) error {
+func (ug *UserModel) deleteArticle(id int) error {
 	var article Article
-	result := Db.Unscoped().Delete(&article, id) // hard delete
+	result := ug.DB.Unscoped().Delete(&article, id) // hard delete
 	msg := fmt.Sprintf("Deleted %v record from db.", result.RowsAffected)
 	if result.RowsAffected == 0 {
 		dbErrorLog.Println(msg)
@@ -125,8 +115,8 @@ func deleteArticle(Db *gorm.DB, id int) error {
 	}
 }
 
-func DeleteArticle(id int) error {
-	err := deleteArticle(Db, id)
+func (ug *UserModel) DeleteArticle(id int) error {
+	err := ug.deleteArticle(id)
 	if err != nil {
 		dbErrorLog.Println("Couldn't find article with ID", id)
 		return err
@@ -136,27 +126,28 @@ func DeleteArticle(id int) error {
 }
 
 // view article
-func (a *Article) getArticle(Db *gorm.DB, id int) error {
-	result := Db.First(&a, id)
+func (ug *UserModel) getArticle(id int) (*Article, error) {
+	var a Article
+	result := ug.DB.First(&a, id)
 	msg := fmt.Sprintf("Retrieved %v records from db.", result.RowsAffected)
 	if result.RowsAffected == 0 {
 		dbErrorLog.Println(msg)
-		return errors.New(msg)
+		return &a, errors.New(msg)
 	} else {
 		dbInfoLog.Println(msg)
-		return nil
+		return &a, nil
 	}
 }
 
-func (a *Article) GetArticle(id int) error {
-	err := a.getArticle(Db, id)
+func (ug *UserModel) GetArticle(id int) (*Article, error) {
+	a, err := ug.getArticle(id)
 	if err != nil {
 		msg := fmt.Sprintf("Coudn't find article with id %d", id)
 		dbErrorLog.Println(msg)
-		return errors.New(msg)
+		return a, errors.New(msg)
 	}
 	dbInfoLog.Printf("Retrieved article '%s' with id %d.", a.Title, id)
-	return nil
+	return a, nil
 }
 
 func (a *Article) ToJSON(w io.Writer) error {
@@ -166,8 +157,8 @@ func (a *Article) ToJSON(w io.Writer) error {
 }
 
 // update article
-func updateArticle(Db *gorm.DB, article Article, id int) error {
-	result := Db.Model(&article).Where("id = ?", id).Updates(article)
+func (ug *UserModel) updateArticle(a *Article, id int) error {
+	result := ug.DB.Model(&a).Where("id = ?", id).Updates(a)
 	msg := fmt.Sprintf("Updated %v record/s in db.", result.RowsAffected)
 	if result.RowsAffected == 0 {
 		// dbErrorLog.Println(msg)
@@ -178,10 +169,10 @@ func updateArticle(Db *gorm.DB, article Article, id int) error {
 	}
 }
 
-func (a *Article) UpdateArticle(id int) error {
-	err := updateArticle(Db, *a, id)
+func (ug *UserModel) UpdateArticle(a *Article, id int) error {
+	err := ug.updateArticle(a, id)
 	if err != nil {
-		dbErrorLog.Printf("Coudn't update article with id %d\n%s", id, err)
+		// dbErrorLog.Printf("Coudn't update article with id %d: %s", id, err)
 		return err
 	}
 	dbInfoLog.Printf("Updated article with id %d. New book title: '%s'", id, a.Title)

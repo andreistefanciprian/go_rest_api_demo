@@ -1,23 +1,17 @@
-package webserver
+package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/andreistefanciprian/go_rest_api_demo/backend/dbmodel"
 	jwt "github.com/golang-jwt/jwt/v4"
 )
 
-var mySigningKey = []byte(os.Getenv("JWT_SECRET_KEY"))
-var InfoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-var ErrorLog = log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
-
 // home page
-func homePage(w http.ResponseWriter, r *http.Request) {
-	InfoLog.Println("Endpoint Hit: /")
+func (app *application) homePage(w http.ResponseWriter, r *http.Request) {
+	app.infoLog.Println("Endpoint Hit: /")
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
@@ -25,18 +19,18 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Hello from Book Library"))
 }
 
-func ViewArticles(w http.ResponseWriter, r *http.Request) {
-	InfoLog.Println("Endpoint Hit: /articles")
+func (app *application) ViewArticles(w http.ResponseWriter, r *http.Request) {
+	app.infoLog.Println("Endpoint Hit: /articles")
 	var a dbmodel.Articles
 	w.Header().Set("content-type", "application/json")
-	err := a.JSONViewArticles(w)
+	err := app.articles.JSONViewArticles(w, &a)
 	if err != nil {
 		http.Error(w, "Unable to marshal json", http.StatusInternalServerError)
 	}
 }
 
-func CreateArticle(w http.ResponseWriter, r *http.Request) {
-	InfoLog.Println("Endpoint Hit: /article/create")
+func (app *application) CreateArticle(w http.ResponseWriter, r *http.Request) {
+	app.infoLog.Println("Endpoint Hit: /article/create")
 	if r.Method != "POST" {
 		w.Header().Set("Allow", "POST")
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -46,14 +40,14 @@ func CreateArticle(w http.ResponseWriter, r *http.Request) {
 	article := &dbmodel.Article{}
 	article.FromJSON(r.Body)
 
-	err := article.AddArticle()
+	err := app.articles.AddArticle(article)
 	if err != nil {
 		http.Error(w, "Coudn't add article to db.", http.StatusInternalServerError)
 	}
 }
 
-func UpdateArticle(w http.ResponseWriter, r *http.Request) {
-	InfoLog.Println("Endpoint Hit: /article/update")
+func (app *application) UpdateArticle(w http.ResponseWriter, r *http.Request) {
+	app.infoLog.Println("Endpoint Hit: /article/update")
 	if r.Method != "POST" {
 		w.Header().Set("Allow", "POST")
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -63,7 +57,7 @@ func UpdateArticle(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(rawId)
 	if err != nil || id < 1 {
 		msg := fmt.Sprintf("Id '%s' is not  a valid id number!", rawId)
-		ErrorLog.Println(msg)
+		app.errorLog.Println(msg)
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
@@ -72,8 +66,9 @@ func UpdateArticle(w http.ResponseWriter, r *http.Request) {
 	// reqBody, _ := ioutil.ReadAll(r.Body)
 	article.FromJSON(r.Body)
 
-	err = article.UpdateArticle(id)
+	err = app.articles.UpdateArticle(article, id)
 	if err != nil {
+		app.errorLog.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else {
 		w.WriteHeader(http.StatusOK)
@@ -81,8 +76,8 @@ func UpdateArticle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func DeleteArticle(w http.ResponseWriter, r *http.Request) {
-	InfoLog.Println("Endpoint Hit: /article/delete")
+func (app *application) DeleteArticle(w http.ResponseWriter, r *http.Request) {
+	app.infoLog.Println("Endpoint Hit: /article/delete")
 	if r.Method != "POST" {
 		w.Header().Set("Allow", "POST")
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -92,11 +87,11 @@ func DeleteArticle(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(rawId)
 	if err != nil || id < 1 {
 		msg := fmt.Sprintf("Id '%s' is not  a valid id number!", rawId)
-		ErrorLog.Println(msg)
+		app.errorLog.Println(msg)
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
-	err = dbmodel.DeleteArticle(id)
+	err = app.articles.DeleteArticle(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 	} else {
@@ -106,8 +101,8 @@ func DeleteArticle(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func ViewArticle(w http.ResponseWriter, r *http.Request) {
-	InfoLog.Println("Endpoint Hit: /article/view")
+func (app *application) ViewArticle(w http.ResponseWriter, r *http.Request) {
+	app.infoLog.Println("Endpoint Hit: /article/view")
 	if r.Method != "GET" {
 		w.Header().Set("Allow", "GET")
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -117,12 +112,12 @@ func ViewArticle(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(rawId)
 	if err != nil || id < 1 {
 		msg := fmt.Sprintf("Id '%s' is not  a valid id number!", rawId)
-		ErrorLog.Println(msg)
+		app.errorLog.Println(msg)
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
 	article := &dbmodel.Article{}
-	err = article.GetArticle(id)
+	article, err = app.articles.GetArticle(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 	} else {
@@ -131,16 +126,17 @@ func ViewArticle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func DeleteArticles(w http.ResponseWriter, r *http.Request) {
-	InfoLog.Println("Endpoint Hit: /articles/delete_all")
+func (app *application) DeleteArticles(w http.ResponseWriter, r *http.Request) {
+	app.infoLog.Println("Endpoint Hit: /articles/delete_all")
 	if r.Method != "POST" {
 		w.Header().Set("Allow", "POST")
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	var articles dbmodel.Articles
-	err := articles.DeleteArticles()
+	err := app.articles.DeleteArticles(&articles)
 	if err != nil {
+		app.errorLog.Println(err)
 		http.Error(w, err.Error(), http.StatusNotFound)
 	} else {
 		msg := fmt.Sprintf("Deleted %d articles.", len(articles))
@@ -150,9 +146,8 @@ func DeleteArticles(w http.ResponseWriter, r *http.Request) {
 }
 
 // middleware for parsing HTTP Token Header from incoming requests
-func JwtAuthentication(endpoint http.HandlerFunc) http.Handler {
+func (app *application) JwtAuthentication(endpoint http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		InfoLog.Println("***** Executing JWT middleware *****")
 		// verify if Token header exists
 		headers := r.Header
 		_, exists := headers["Token"]
@@ -163,53 +158,24 @@ func JwtAuthentication(endpoint http.HandlerFunc) http.Handler {
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 				}
-				return mySigningKey, nil
+				return app.mySigningKey, nil
 			})
 			if err != nil {
-				ErrorLog.Println(err)
+				app.errorLog.Println(err)
 			}
 			// if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			// 	fmt.Println(claims)
 			if token.Valid {
-				InfoLog.Println("JWT Auth is successful!")
 				endpoint.ServeHTTP(w, r)
 			} else {
-				ErrorLog.Println("JWT Auth Token is NOT valid!")
+				app.errorLog.Println("JWT Auth Token is NOT valid!")
 				w.WriteHeader(http.StatusUnauthorized)
 				w.Write([]byte("Not Authorised! JWT Auth Token is NOT valid!"))
 			}
 		} else {
-			ErrorLog.Println("JWT Auth Token HTTP Header is NOT Present!")
+			app.errorLog.Println("JWT Auth Token HTTP Header is NOT Present!")
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Not Authorised! JWT Auth Token HTTP Header is NOT Present!"))
 		}
 	})
-}
-
-// start server
-func StartServer() {
-
-	// create a new serve mux and register the handlers
-	mux := http.NewServeMux()
-	mux.Handle("/", JwtAuthentication(homePage))
-	mux.Handle("/articles", JwtAuthentication(ViewArticles))
-	mux.Handle("/article/create", JwtAuthentication(CreateArticle))
-	mux.Handle("/article/delete", JwtAuthentication(DeleteArticle))
-	mux.Handle("/article/view", JwtAuthentication(ViewArticle))
-	mux.Handle("/article/update", JwtAuthentication(UpdateArticle))
-	mux.Handle("/articles/delete_all", JwtAuthentication(DeleteArticles))
-
-	// create a new server
-	var httpPort = ":8080"
-	srv := http.Server{
-		Addr:    httpPort,
-		Handler: mux,
-	}
-
-	// start the server
-	InfoLog.Println("Listening on port", httpPort)
-	err := srv.ListenAndServe()
-	if err != nil {
-		ErrorLog.Fatal(err)
-	}
 }
